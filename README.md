@@ -119,7 +119,7 @@ The user does not select `traverse` vs `parTraverse`, and so on, but instead the
 ```scala
 val exampleId = 5
 
-val singleFetch: IO[Option[Int]] = 5.fetch
+val singleFetch: IO[Option[Int]] = 5.fetch[Id, Int, Int] //Can also manually supply the Fetch instance
 
 val effectfulFetch: IO[Option[Int]] = IO(5).fetch[Int]
 
