@@ -5,7 +5,7 @@ A port of the Fetch library to Tagless Final style
 * Encoded in tagless final style, instead of as a data structure
 * No need for explicit support for logging, timing, rate-limiting, timeouts, etc. as those can use your base effect type.
 * Less runtime overhead due to being implemented in terms of existing effects, rather than as its own effect.
-* Approx. 190x faster in the best case compared to Fetch (identical DataSource/Fetch instances, benchmark not available yet)
+* Orders of magnitude faster than original Fetch (identical DataSource/Fetch instances, benchmark not available yet)
 * Core code extremely small (~50loc), most code is actually just implicit syntax wrappers for collections & tuples.
 * No required type class dependencies to call fetching methods (after creating a `Fetch` instance)
 
@@ -31,9 +31,11 @@ As listed above in the "key differences" section, a tagless approach has numerou
 The two biggest advantages are speed and API flexibility.
 
 ### Speed
-While not properly benchmarked extensively yet, I've ran a small local test (will push up later) that requests 50,000 arbitrary integers from a Map.
-In Fetch, this took about 121817300ns, while in Fetchless this took 638900ns (just over 190x as fast).
-In the real world, the difference is likely not nearly as profound but it should tell you that a tagless final approach is fundamentally more efficient than encoding your fetch requests to a data structure before running them.
+While not properly benchmarked extensively yet (I wrote this up very quickly and will expand on this later if necessary), I've ran a small local test that requests 50,000 arbitrary integers from a Map.
+In this test, Fetch retrieves from a DataSource and fetchless retrieves from a `Fetch` instance that is similarly configured (and probably less efficiently, too, since it needs to convert collections).
+The test was performed with Fetch v2.1.1 (v3.0.0 is a bit slower, and needs optimization) using `sequence` as the batching method for Fetch and `fetchAll`, a similar syntax method, in fetchless.
+In Fetch, this took about 7445548000ns, while in Fetchless this took 17683800ns (about 421x as fast).
+In the real world, the difference is likely not nearly as profound and when testing with smaller numbers of elements the difference is not nearly as large, but it should tell you that a tagless final approach is fundamentally more efficient than encoding your fetch requests to a data structure before running them.
 
 ### Flexibility
 There are a couple details in Fetch that make it not very flexible in the API department:
