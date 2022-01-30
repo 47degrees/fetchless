@@ -17,7 +17,7 @@ class SyntaxSpec extends AnyFunSuite with Matchers {
   }
 
   test("List batching") {
-    val result = List(1, 2, 3).batchAll(dummyFetch)
+    val result = List(1, 2, 3).fetchAll(dummyFetch)
     result shouldEqual Map(
       2 -> 1,
       4 -> 2,
@@ -36,14 +36,14 @@ class SyntaxSpec extends AnyFunSuite with Matchers {
   }
 
   test("Tuple batching") {
-    val resultBatchAll = (1, 2, 3).batchAll[Id, Int]
+    val resultBatchAll = (1, 2, 3).fetchAll[Id, Int]
     resultBatchAll shouldEqual Map(
       2 -> 1,
       4 -> 2,
       6 -> 3
     )
 
-    val resultTupled = (1, 2, 3, 4, 5, 6).batchTupled[Id, Int]
+    val resultTupled = (1, 2, 3, 4, 5, 6).fetchTupled[Id, Int]
     resultTupled shouldEqual (None, Some(1), None, Some(2), None, Some(3))
   }
 }

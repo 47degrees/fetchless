@@ -4,6 +4,8 @@ import cats.syntax.all._
 import cats.{Applicative, Functor, Traverse}
 import cats.effect.Clock
 import scala.concurrent.duration.FiniteDuration
+import cats.Parallel
+import cats.CommutativeApplicative
 
 /**
  * The ability to fetch values `A` given an ID `I`. Represents a data source such as a database,
@@ -19,13 +21,29 @@ object Fetch {
 
   /**
    * Allows creating a `Fetch` instance for some data source that does not allow for batching.
-   * Batches are simply implemented as sequenced single fetches.
+   * Batches are implemented as sequenced single fetches with no parallelism.
    */
-  def singleOnly[F[_]: Applicative, I, A](f: I => F[Option[A]]): Fetch[F, I, A] =
+  def singleSequenced[F[_]: Applicative, I, A](f: I => F[Option[A]]): Fetch[F, I, A] =
     new Fetch[F, I, A] {
       def single(i: I) = f(i)
       def batch(iSet: Set[I]) = iSet.toList
         .traverse { i =>
+          f(i).map(_.tupleLeft(i))
+        }
+        .map(_.flattenOption.toMap)
+    }
+
+  /**
+   * Allows creating a `Fetch` instance for some data source that does not allow for batching.
+   * Batches are implemented as sequenced single fetches with no parallelism.
+   */
+  def singleParallel[F[_]: Applicative: Parallel, I, A](
+      f: I => F[Option[A]]
+  ): Fetch[F, I, A] =
+    new Fetch[F, I, A] {
+      def single(i: I) = f(i)
+      def batch(iSet: Set[I]) = iSet.toList
+        .parTraverse { i =>
           f(i).map(_.tupleLeft(i))
         }
         .map(_.flattenOption.toMap)

@@ -6,40 +6,79 @@ import cats.syntax.all._
 object syntax {
 
   implicit class SingleSyntax[I](i: I) {
+
+    /** Fetches a single result. Does not try to auto-batch requests. */
     def fetch[F[_], A](implicit F: Fetch[F, I, A]): F[Option[A]] = F.single(i)
   }
 
   implicit class EffectfulSyntax[F[_]: FlatMap, I](fi: F[I]) {
+
+    /** Fetches a single result. Does not try to auto-batch requests. */
     def fetch[A](implicit F: Fetch[F, I, A]): F[Option[A]] = fi.flatMap(F.single(_))
   }
 
   implicit class TraverseBatchSyntax[G[_]: Traverse, I](is: G[I]) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current collection. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is)
   }
 
   implicit class Tuple2BatchSyntax[I](is: (I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2)).map { m =>
         (m.get(is._1), m.get(is._2))
       }
   }
 
   implicit class Tuple3BatchSyntax[I](is: (I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3))
       }
   }
 
   implicit class Tuple4BatchSyntax[I](is: (I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4)).map { m =>
         println("batchin'")
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
@@ -47,27 +86,57 @@ object syntax {
   }
 
   implicit class Tuple5BatchSyntax[I](is: (I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
       }
   }
 
   implicit class Tuple6BatchSyntax[I](is: (I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
       }
   }
 
   implicit class Tuple7BatchSyntax[I](is: (I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { m =>
         (
           m.get(is._1),
@@ -82,9 +151,19 @@ object syntax {
   }
 
   implicit class Tuple8BatchSyntax[I](is: (I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8)).map { m =>
         (
           m.get(is._1),
@@ -100,9 +179,19 @@ object syntax {
   }
 
   implicit class Tuple9BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9)).map { m =>
         (
           m.get(is._1),
@@ -119,9 +208,19 @@ object syntax {
   }
 
   implicit class Tuple10BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10)).map {
         m =>
           (
@@ -140,9 +239,19 @@ object syntax {
   }
 
   implicit class Tuple11BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11))
       .map { m =>
         (
@@ -162,9 +271,19 @@ object syntax {
   }
 
   implicit class Tuple12BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
       )
@@ -187,9 +306,19 @@ object syntax {
   }
 
   implicit class Tuple13BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -227,9 +356,19 @@ object syntax {
   }
 
   implicit class Tuple14BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -269,9 +408,19 @@ object syntax {
   }
 
   implicit class Tuple15BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -313,9 +462,19 @@ object syntax {
   }
 
   implicit class Tuple16BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -359,9 +518,19 @@ object syntax {
   }
 
   implicit class Tuple17BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -407,9 +576,19 @@ object syntax {
   }
 
   implicit class Tuple18BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -459,9 +638,19 @@ object syntax {
   implicit class Tuple19BatchSyntax[I](
       is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)
   ) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -513,9 +702,19 @@ object syntax {
   implicit class Tuple20BatchSyntax[I](
       is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)
   ) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -569,9 +768,19 @@ object syntax {
   implicit class Tuple21BatchSyntax[I](
       is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)
   ) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
@@ -627,9 +836,19 @@ object syntax {
   implicit class Tuple22BatchSyntax[I](
       is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)
   ) {
-    def batchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+
+    /**
+     * Fetches all results in the current tuple, as a map. Will try to batch requests if your Fetch
+     * instance supports it.
+     */
+    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
-    def batchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
+
+    /**
+     * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
+     * requests if your `Fetch` instance supports it.
+     */
+    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) = fetch
       .batch(
         Set(
           is._1,
