@@ -2,19 +2,34 @@ package fetchless
 
 import cats.{FlatMap, Functor, Traverse}
 import cats.syntax.all._
+import cats.Monad
+import cats.data.Kleisli
 
 object syntax {
+
+  implicit class FDedupedFetchSyntax[F[_]: Monad, A](fdf: F[DedupedFetch[F, A]]) {
+    def alsoFetch[I, B](i: I)(implicit fetch: Fetch[F, I, B]) = fdf.flatMap { df =>
+      df.alsoFetch(i)
+    }
+    def alsoFetchAll[I, B](is: Set[I])(implicit fetch: Fetch[F, I, B]) = fdf.flatMap { df =>
+      df.alsoFetchAll(is)
+    }
+  }
 
   implicit class SingleSyntax[I](i: I) {
 
     /** Fetches a single result. Does not try to auto-batch requests. */
     def fetch[F[_], A](implicit F: Fetch[F, I, A]): F[Option[A]] = F.single(i)
+    def fetchLazy[F[_]: Monad, A](implicit F: Fetch[F, I, A]): LazyFetch[F, Option[A]] =
+      F.singleLazy(i)
   }
 
   implicit class EffectfulSyntax[F[_]: FlatMap, I](fi: F[I]) {
 
     /** Fetches a single result. Does not try to auto-batch requests. */
     def fetch[A](implicit F: Fetch[F, I, A]): F[Option[A]] = fi.flatMap(F.single(_))
+    def fetchLazy[A](implicit F: Fetch[F, I, A], M: Monad[F]) =
+      LazyFetch.liftF(fi).flatMap(i => F.singleLazy(i))
   }
 
   implicit class TraverseBatchSyntax[G[_]: Traverse, I](is: G[I]) {
@@ -80,7 +95,6 @@ object syntax {
      */
     def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4)).map { m =>
-        println("batchin'")
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
       }
   }
