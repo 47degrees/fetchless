@@ -42,4 +42,34 @@ class LazySpec extends CatsEffectSuite {
 
     firstProgram >> secondProgram
   }
+
+  test("Has a parallel instance with LazyBatch") {
+    implicit val intFetch = Fetch.singleSequenced[Id, Int, Int]("intFetch") { i =>
+      Some(i)
+    }
+
+    implicit val boolFetch = Fetch.singleSequenced[Id, Boolean, Boolean]("boolFetch") { i =>
+      Some(i)
+    }
+
+    val results =
+      (intFetch.singleLazy(5) >> List(
+        intFetch.singleLazy(1),
+        intFetch.singleLazy(2),
+        intFetch.singleLazy(3)
+      ).parSequence).run
+
+    assertEquals(
+      results,
+      DedupedFetch[Id, List[Option[Int]]](
+        Map(
+          (5, "intFetch") -> Some(5),
+          (1, "intFetch") -> Some(1),
+          (2, "intFetch") -> Some(2),
+          (3, "intFetch") -> Some(3)
+        ),
+        List(Some(1), Some(2), Some(3))
+      )
+    )
+  }
 }

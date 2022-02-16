@@ -14,7 +14,7 @@ class DedupingSpec extends FunSuite {
     val dedupeA = DedupedFetch(Map(exampleKey -> 1.some), none[Int])
     val dedupeB = DedupedFetch(Map(exampleKey -> none[Int]), none[Int])
 
-    assert(dedupeA.absorb(dedupeB).cache == Map(exampleKey -> none[Int]))
+    assert(dedupeA.absorb(dedupeB).unsafeCache == Map(exampleKey -> none[Int]))
   }
 
   test("DedupedFetch flatMap") {
@@ -27,13 +27,15 @@ class DedupingSpec extends FunSuite {
       case Some(i) => dedupeB.copy(last = i.some)
     }
 
-    val expected = DedupedFetch(
+    val expected = DedupedFetch[Id, Option[Int]](
       Map(
         exampleKey -> 1.some,
         key2       -> 2.some
       ),
       4.some
     )
+
+    assertEquals(result, expected)
   }
 
   test("Dedupe across multiple fetches") {
@@ -44,14 +46,9 @@ class DedupingSpec extends FunSuite {
       Some(i)
     }
 
-    implicit val boolFetch = new Fetch[Id, Boolean, Boolean] {
-      val id: String = "boolFetch"
-
-      def single(i: Boolean): Id[Option[Boolean]] = Some(i)
-
-      def batch(iSet: Set[Boolean]): Id[Map[Boolean, Boolean]] = iSet.toList.map(i => (i, i)).toMap
-
-    }
+    implicit val boolFetch = Fetch.batchable[Id, Boolean, Boolean](
+      "boolFetch"
+    )(i => Some(i))(iSet => iSet.toList.map(i => (i, i)).toMap)
 
     val result = intFetch
       .singleDedupe(5)
@@ -61,7 +58,7 @@ class DedupingSpec extends FunSuite {
       .alsoFetch[Int, Int](6)
 
     assert(
-      result.cache == Map(
+      result.unsafeCache == Map(
         (5    -> "intFetch")  -> 5.some,
         (6    -> "intFetch")  -> 6.some,
         (true -> "boolFetch") -> true.some
@@ -69,5 +66,6 @@ class DedupingSpec extends FunSuite {
     )
 
     assertEquals(result.last, 6.some)
+    assertEquals(timesIntsFetched, 2)
   }
 }

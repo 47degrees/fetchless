@@ -8,13 +8,8 @@ import munit.FunSuite
 
 class SyntaxSpec extends FunSuite {
 
-  implicit val dummyFetch = new Fetch[Id, Int, Int] {
-    val id: String                      = "dummyFetch"
-    def single(i: Int): Id[Option[Int]] = Some(i)
-
-    def batch(iSet: Set[Int]): Id[Map[Int, Int]] = iSet.toList.map(i => (i * 2, i)).toMap
-
-  }
+  implicit val dummyFetch =
+    Fetch.batchable[Id, Int, Int]("dummyFetch")(Some(_))(is => is.toList.map(i => (i * 2, i)).toMap)
 
   test("List batching") {
     val result = List(1, 2, 3).fetchAll(dummyFetch)
