@@ -11,10 +11,11 @@ A port of the Fetch library to Tagless Final style
 
 ## Motivation
 In Fetch 3.0.0, I made a decision to remove the guarantee for implicit batching on `sequence`/`traverse` calls due to the behavior breaking from a Cats version upgrade.
-It's entirely possible to fix this (and I've already submitted a PR) without breaking anything, but it seemed best at the time with what limited perspective I had that maybe we should instead introduce explicit batching syntax.
+This is reverted as of 3.1.0, but it seemed best at the time with what limited perspective I had that maybe we should instead introduce explicit batching syntax.
 In hindsight, I think this makes Fetch somewhat less useful and have considered the alternatives.
 
-The entire point of Fetch, in a sense, is to auto-batch requests wherever possible.
+The entire point of Fetch, in a sense, is to auto-batch and parallelize requests wherever possible.
+It does this by encoding a DSL for fetches as an explicit effect type that is interpreted later, using a custom `Monad` instance with overrides on certain applicative methods.
 There are some pros and cons with this approach:
 
 Pros:
