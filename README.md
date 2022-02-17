@@ -2,15 +2,15 @@
 A port of the Fetch library to Tagless Final style
 
 ## Key Differences
-* Encoded in tagless final style, instead of as a data structure
+* Encoded in tagless final style first, instead of as a data structure
 * No need for explicit support for logging, timing, rate-limiting, timeouts, etc. as those can use your base effect type.
 * Less runtime overhead due to being implemented in terms of existing effects, rather than as its own effect.
-* Orders of magnitude faster than original Fetch (identical DataSource/Fetch instances, benchmark not available yet)
-* Core code extremely small (~50loc), most code is actually just implicit syntax wrappers for collections & tuples.
+* Potentially orders of magnitude faster than original Fetch
+* Core code is very small, most code is actually just implicit syntax wrappers for collections & tuples.
 * No required type class dependencies to call fetching methods (after creating a `Fetch` instance)
 
 ## Motivation
-In Fetch 3.0.0, I made a decision after consulting with a couple other 47ers to remove the guarantee for implicit batching on `sequence`/`traverse` calls due to the behavior breaking from a Cats version upgrade.
+In Fetch 3.0.0, I made a decision to remove the guarantee for implicit batching on `sequence`/`traverse` calls due to the behavior breaking from a Cats version upgrade.
 It's entirely possible to fix this (and I've already submitted a PR) without breaking anything, but it seemed best at the time with what limited perspective I had that maybe we should instead introduce explicit batching syntax.
 In hindsight, I think this makes Fetch somewhat less useful and have considered the alternatives.
 
@@ -22,7 +22,7 @@ Pros:
 * You can treat it as an effect type on its own, and use it in any code that depends on the `Monad` type class.
 
 Cons:
-* The abstraction breaks down slightly in assuming that users will know and understand that `flatMap` is strictly sequential, whereas `tupled`/`traverse` might not be. So to optimize fetches, the user needs to be aware of whether or not these `Applicative` methods can be used instead of monadic ones, and in that case it could be argued that the user might as well just explicitly ask for batching in those cases (since those functions require an applicative-friendly signature)
+* The abstraction breaks down slightly in assuming that users will know and understand that `flatMap` is strictly sequential, whereas `tupled`/`traverse` might not be. So to optimize fetches, the user needs to be aware of whether or not these `Applicative` methods can be used instead of monadic ones, and in that case it could be argued that the user might as well just explicitly ask for batching in those cases (since those functions require an applicative-friendly signature anyhow)
 * Requires custom code for features such as logging, timing, timeouts, etc. for any intermediate fetch.
 * Must be interpreted at runtime from its reified form, which also implies leaking the `Concurrent` implementation detail for when you plug in an effect type.
 * Can break at a moment's notice if any implementation details in Cats that this depends on for auto-batching support lawfully change (as did happen before 3.0.0)
@@ -31,26 +31,54 @@ As listed above in the "key differences" section, a tagless approach has numerou
 The two biggest advantages are speed and API flexibility.
 
 ### Speed
-While not properly benchmarked extensively yet (I wrote this up very quickly and will expand on this later if necessary), I've ran a small local test that requests 50,000 arbitrary integers from a Map.
-In this test, Fetch retrieves from a DataSource and fetchless retrieves from a `Fetch` instance that is similarly configured (and probably less efficiently, too, since it needs to convert collections).
-The test was performed with Fetch v2.1.1 (v3.0.0 is a bit slower, and needs optimization) using `sequence` as the batching method for Fetch and `fetchAll`, a similar syntax method, in fetchless.
-In Fetch, this took about 7445548000ns, while in Fetchless this took 17683800ns (about 421x as fast).
-In the real world, the difference is likely not nearly as profound and when testing with smaller numbers of elements the difference is not nearly as large, but it should tell you that a tagless final approach is fundamentally more efficient than encoding your fetch requests to a data structure before running them.
+While not properly benchmarked extensively yet (I wrote this up very quickly and will expand on this later), I've ran some local benchmarks that confirm my initial suspicions about the speed of Fetch vs Fetchless.
+On a fundamental level, it should make sense that a "Free"-style DSL is slower to at least some degree than a "tagless final"-style one.
+This is because of how they are encoded, since the tagless version is much more direct and has less overhead by definition.
+
+Here is some code from a (currently local, unpublished) benchmark that should get the point across (time in nanoseconds)
+
+(average, in nanoseconds, over 40 runs)
+
+```
+Immediate fetch result
+1.766989E7
+LazyFetch result
+5.771211E7
+LazyBatch set result
+6.1988705E7
+LazyBatch traverse result
+1.01431315E8
+LazyFetch parTraverse result
+1.5393665E8
+```
+
+Doing an identical benchmark on Fetch, looks like the following:
+
+(average, in nanoseconds, over 40 runs)
+```
+Fetch traverse result
+7.6349248325E9
+```
+
+In each case, the benchmark involves traversing over a list of integers and performing a fetch.
+For the `immediate` case up top, that is for a direct fetch with no deduping or auto-batching support.
+`LazyFetch` supports deduping and sequencing, but not auto-batching, and `LazyBatch` is an applicative type that supports batches only.
+So in the absolute worst case for Fetchless, it appears that starting with `LazyFetch` and using `parTraverse` to re-encode as a single `LazyBatch` takes well over an order of magnitude less time to perform.
+It's still possible that future changes will bridge this gap slowly, as more features and functionality are added or possible bugs are fixed, but this is a very promising start and shows that even if you choose the slowest possible fetch option in Fetchless, it is still faster than Fetch.
 
 ### Flexibility
 There are a couple details in Fetch that make it not very flexible in the API department:
 
 * `DataSource` instances must contain a `Concurrent` instance for the effect type, even if it is not used in an implementation, simply because it is possible that it could be.
-
-* `Fetch.run` and similar require the `Concurrent` type class, which means that if you are several layers deep into your program you have to depend on this rather heavy type class for your effect type rather than something more simple.
-
-* Because a `Fetch` is its own effect, implementing features that happen between sequenced fetches requires basically duplicating the API of Cats Effect, in Fetch, rather than relying on existing functionality that is less likely to need maintenance.
+* It must also specify an execution style and a maximum count for batches, if any. These feel like leaking implementation details that could just be closed over in the implementation.
+* `Fetch.run` and similar require the `Concurrent` type class among others, which means that if you are several layers deep into your program you have to depend on this rather heavy type class for your effect type rather than something more simple like `Monad`.
+* Because a `Fetch` is its own effect, implementing features that happen between sequenced fetches requires implementing the functionality inside the library, rather than providing some kind of way for users to hook in and interleve effects.
 
 Fetchless solves this by making the following decisions:
 
 * A `Fetch` instance (similar to `DataSource`) has only two main methods: `single` and `batch`, and no dependency on any specific type class.
-* The `Fetch` instance itself should decide if parallelism should be used in cases of fetching multiple IDs in a batch.
-* The paradigm becomes less about "invisibly batching fetches", and more about describing your data models as "fetchable" by providing a `Fetch` instance for them. Given a `Fetch` instance exists for some type in the current scope, you can use `.fetch`/`.fetchAll`/`.fetchTupled` syntax on any ID value or collection.
+* The `Fetch` instance itself should decide if parallelism or maximum-batch-sizes should be considered in cases of fetching multiple IDs in a batch.
+* The paradigm becomes less about "invisibly batching fetches", and more about describing your data models as "fetchable" by providing a `Fetch` instance for them. Given a `Fetch` instance exists for some type in the current scope, you can use `.fetch`/`.fetchAll`/`.fetchTupled`/`.fetchLazy` syntax on any ID value or collection.
 * For all additional functionality, we can use the base effect system, reducing maintenance burden as well as increasing efficiency.
 
 ## Examples
@@ -108,6 +136,7 @@ Here are the current constructors for `Fetch` instances:
 * `batchable` - Allows you to specify your own functions for `single` and `batch` fetches. No type class constraints (assumed the user will have their own).
 * `batchOnly` - Runs batches only, and encodes single fetches as a one-element batch. Requires `Applicative`. Whether or not batches are in parallel depends on the user's supplied function for the batch.
 * `const` - A constant `Fetch` that retrieves from an in-memory map.
+* `echo` - A `Fetch` that returns the input the user provides, great for tests.
 
 And of course you can always create your own instance, though `batchable` winds up being the same thing with less boilerplate.
 
@@ -129,3 +158,22 @@ val tupledFetch: IO[(Option[Int], Option[Int], Option[Int])] = (5, 5, 5).fetchTu
 ```
 
 This also side-steps the problem of needing to provide explicit support for popular user-requested features, since all fetches are always directly implemented in terms of `F[_]` and can be manipulated with whatever libraries and combinators users already use (including whatever is in the CE3 standard library)
+
+## DedupedFetch
+
+One feature not supported in a standard fetch is deduping, since that requires some kind of context to pass around.
+I've added a type `DedupedFetch` and operators to fetch using this provided context, so that in any context you can make very efficient fetches that depend on previous fetches for caching and deduplication.
+
+## LazyFetch and LazyBatch
+
+The `Fetch` instance can not only deduplicate fetches with `DedupedFetch` but it can also create lazy fetches that approximate the behaavior found in the original `Fetch` library with regards to not only deduplication, but also automatic batching.
+
+A `LazyFetch` is created when you call `.fetchLazy` on an ID, or call `.singleLazy`/`.batchLazy` on a `Fetch` instance.
+It is essentially just a wrapper type that encodes the intention to chain fetch calls together, so you can `flatMap` multiples of them in sequence and raise effects into its context with `LazyFetch.liftF`/`LazyBatch.liftF`.
+
+`LazyBatch` is the parallel of `LazyFetch` which is not monadic, but only `Applicative` and represents the intention to group multiple fetches into a batch.
+You can combine them together with `.tupled` and `.traverse`-style methods that work for any `Applicative` and it will guarantee to put all of your requests into a single batch per-fetch-instance.
+However, you cannot chain them together, so you need to convert back and forth between `LazyFetch` and `LazyBatch` to keep dependent sequencing along with auto-batching.
+This is done with the `Parallel` instance for `LazyFetch` so you can call `.parTupled`/`.parTraverse` and so on on your independent fetches, and get automatic deduplication and batching just like you did in the original Fetch library, only now you must explicitly opt-in to auto-batching.
+
+For more details, please see the included tests.
