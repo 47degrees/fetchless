@@ -112,6 +112,15 @@ final case class LazyBatch[F[_]: Applicative, A](
   def runWithCache(cache: CacheMap)(implicit F: Monad[F], P: Parallel[F]): F[DedupedFetch[F, A]] =
     LazyBatch.runInternal[F, A](getResult).apply(reqs, cache)
 
+  /**
+   * Modify the action of fetching. Useful if you want to add custom logic such as timeouts or
+   * logging based on the result of a single fetch.
+   */
+  def mod[B](f: F[DedupedFetch[F, A]] => F[DedupedFetch[F, B]]) = LazyBatch[F, B](
+    reqs,
+    Kleisli(cache => f(getResult.run(cache)))
+  )
+
 }
 
 object LazyBatch {

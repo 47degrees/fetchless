@@ -112,6 +112,15 @@ final case class LazyFetch[F[_]: FlatMap, A](k: Kleisli[F, CacheMap, DedupedFetc
 
   /** Executes this `LazyFetch`, returning a `DedupedFetch` that has already ran. */
   def run: F[DedupedFetch[F, A]] = k.run(Map.empty)
+
+  /**
+   * Modify the action of fetching. Useful if you want to add custom logic such as timeouts or
+   * logging based on the result of a single fetch.
+   */
+  def mod[B](f: F[DedupedFetch[F, A]] => F[DedupedFetch[F, B]]) = LazyFetch[F, B](
+    Kleisli(cache => f(k.run(cache)))
+  )
+
 }
 
 object LazyFetch {
