@@ -40,16 +40,18 @@ Here is some code from a (currently local, unpublished) benchmark that should ge
 (average, in nanoseconds, over 40 runs)
 
 ```
-Immediate fetch result
-1.766989E7
-LazyFetch result
-5.771211E7
+Immediate fetch traverse result
+1.12204425E7
+Immediate deduped fetch traverse result
+1.58746375E7
+LazyFetch traverse result
+5.33710375E7
 LazyBatch set result
-6.1988705E7
+6.621083E7
 LazyBatch traverse result
-1.01431315E8
+1.01090145E8
 LazyFetch parTraverse result
-1.5393665E8
+1.54424665E8
 ```
 
 Doing an identical benchmark on Fetch, looks like the following:
