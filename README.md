@@ -60,7 +60,7 @@ Fetch traverse result
 7.6349248325E9
 ```
 
-In each case, the benchmark involves traversing over a list of integers and performing a fetch.
+In each case, the benchmark involves traversing over a list of 50,000 integers and performing a fetch, except for `LazyBatch set` which is an explicit batch and not a traversal.
 For the `immediate` case up top, that is for a direct fetch with no deduping or auto-batching support.
 `LazyFetch` supports deduping and sequencing, but not auto-batching, and `LazyBatch` is an applicative type that supports batches only.
 So in the absolute worst case for Fetchless, it appears that starting with `LazyFetch` and using `parTraverse` to re-encode as a single `LazyBatch` takes well over an order of magnitude less time to perform.
