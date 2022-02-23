@@ -140,11 +140,11 @@ object syntax {
       fetch.batchDedupe(Set(is._1, is._2, is._3)).map { df =>
         df.map(m => (m.get(is._1), m.get(is._2), m.get(is._3)))
       }
-    def fetchTupled[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
       fetch.batchLazy(Set(is._1, is._2, is._3)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3))
       }
-    def fetchTupled[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
       fetch.batchLazy(Set(is._1, is._2, is._3)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3))
       }
@@ -157,13 +157,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2, is._3, is._4))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -175,6 +175,26 @@ object syntax {
       }
     def fetchTupled[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4)).map { m =>
+        (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4)).map { df =>
+        df.map { m =>
+          (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
+        }
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4)).map { df =>
+        df.map { m =>
+          (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
+        }
+      }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4)).map { m =>
+        (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
+      }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
       }
   }
@@ -186,13 +206,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2, is._3, is._4, is._5))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -205,6 +225,26 @@ object syntax {
 
     def fetchTupled[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5)).map { m =>
+        (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5)).map { df =>
+        df.map { m =>
+          (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
+        }
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5)).map { df =>
+        df.map { m =>
+          (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
+        }
+      }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5)).map { m =>
+        (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
+      }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
       }
   }
@@ -216,13 +256,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -237,6 +277,26 @@ object syntax {
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { df =>
+        df.map { m =>
+          (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
+        }
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { df =>
+        df.map { m =>
+          (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
+        }
+      }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { m =>
+        (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
+      }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { m =>
+        (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
+      }
   }
 
   implicit class Tuple7BatchSyntax[I](is: (I, I, I, I, I, I, I)) {
@@ -246,13 +306,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -273,6 +333,50 @@ object syntax {
 
     def fetchTupled[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { m =>
+        (
+          m.get(is._1),
+          m.get(is._2),
+          m.get(is._3),
+          m.get(is._4),
+          m.get(is._5),
+          m.get(is._6),
+          m.get(is._7)
+        )
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { df =>
+        df.map { m =>
+          (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
+        }
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { df =>
+        df.map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7)
+          )
+        }
+      }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { m =>
+        (
+          m.get(is._1),
+          m.get(is._2),
+          m.get(is._3),
+          m.get(is._4),
+          m.get(is._5),
+          m.get(is._6),
+          m.get(is._7)
+        )
+      }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { m =>
         (
           m.get(is._1),
           m.get(is._2),
@@ -292,13 +396,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -320,6 +424,62 @@ object syntax {
 
     def fetchTupled[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8)).map { m =>
+        (
+          m.get(is._1),
+          m.get(is._2),
+          m.get(is._3),
+          m.get(is._4),
+          m.get(is._5),
+          m.get(is._6),
+          m.get(is._7),
+          m.get(is._8)
+        )
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8)).map { df =>
+        df.map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8)
+          )
+        }
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8)).map { df =>
+        df.map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8)
+          )
+        }
+      }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8)).map { m =>
+        (
+          m.get(is._1),
+          m.get(is._2),
+          m.get(is._3),
+          m.get(is._4),
+          m.get(is._5),
+          m.get(is._6),
+          m.get(is._7),
+          m.get(is._8)
+        )
+      }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8)).map { m =>
         (
           m.get(is._1),
           m.get(is._2),
@@ -340,13 +500,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -369,6 +529,68 @@ object syntax {
 
     def fetchTupled[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9)).map { m =>
+        (
+          m.get(is._1),
+          m.get(is._2),
+          m.get(is._3),
+          m.get(is._4),
+          m.get(is._5),
+          m.get(is._6),
+          m.get(is._7),
+          m.get(is._8),
+          m.get(is._9)
+        )
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9)).map {
+        df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9)
+            )
+          }
+      }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9)).map {
+        df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9)
+            )
+          }
+      }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9)).map { m =>
+        (
+          m.get(is._1),
+          m.get(is._2),
+          m.get(is._3),
+          m.get(is._4),
+          m.get(is._5),
+          m.get(is._6),
+          m.get(is._7),
+          m.get(is._8),
+          m.get(is._9)
+        )
+      }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9)).map { m =>
         (
           m.get(is._1),
           m.get(is._2),
@@ -390,13 +612,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -435,6 +657,78 @@ object syntax {
             m.get(is._10)
           )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10)
+          )
+        }
   }
 
   implicit class Tuple11BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I)) {
@@ -444,13 +738,19 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -491,6 +791,90 @@ object syntax {
           m.get(is._11)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11)
+          )
+        }
   }
 
   implicit class Tuple12BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I)) {
@@ -500,13 +884,19 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -553,6 +943,94 @@ object syntax {
           m.get(is._12)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12)
+          )
+        }
   }
 
   implicit class Tuple13BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I)) {
@@ -562,13 +1040,61 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -645,6 +1171,154 @@ object syntax {
           m.get(is._13)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13)
+          )
+        }
   }
 
   implicit class Tuple14BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
@@ -654,13 +1328,64 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -741,6 +1466,162 @@ object syntax {
           m.get(is._14)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14)
+          )
+        }
   }
 
   implicit class Tuple15BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
@@ -750,13 +1631,67 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -841,6 +1776,170 @@ object syntax {
           m.get(is._15)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15)
+          )
+        }
   }
 
   implicit class Tuple16BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
@@ -850,13 +1949,70 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -945,6 +2101,178 @@ object syntax {
           m.get(is._16)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16)
+          )
+        }
   }
 
   implicit class Tuple17BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
@@ -954,13 +2282,73 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -1053,6 +2441,186 @@ object syntax {
           m.get(is._17)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17)
+          )
+        }
   }
 
   implicit class Tuple18BatchSyntax[I](is: (I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I)) {
@@ -1062,13 +2630,76 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -1165,6 +2796,194 @@ object syntax {
           m.get(is._18)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18)
+          )
+        }
   }
 
   implicit class Tuple19BatchSyntax[I](
@@ -1176,13 +2995,79 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -1283,6 +3168,202 @@ object syntax {
           m.get(is._19)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18),
+              m.get(is._19)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18),
+              m.get(is._19)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18),
+            m.get(is._19)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18),
+            m.get(is._19)
+          )
+        }
   }
 
   implicit class Tuple20BatchSyntax[I](
@@ -1294,13 +3375,82 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -1405,6 +3555,210 @@ object syntax {
           m.get(is._20)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18),
+              m.get(is._19),
+              m.get(is._20)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18),
+              m.get(is._19),
+              m.get(is._20)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18),
+            m.get(is._19),
+            m.get(is._20)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18),
+            m.get(is._19),
+            m.get(is._20)
+          )
+        }
   }
 
   implicit class Tuple21BatchSyntax[I](
@@ -1416,13 +3770,85 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20,
+          is._21
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20,
+          is._21
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20,
+          is._21
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -1531,6 +3957,218 @@ object syntax {
           m.get(is._21)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20,
+            is._21
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18),
+              m.get(is._19),
+              m.get(is._20),
+              m.get(is._21)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20,
+            is._21
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18),
+              m.get(is._19),
+              m.get(is._20),
+              m.get(is._21)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20,
+            is._21
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18),
+            m.get(is._19),
+            m.get(is._20),
+            m.get(is._21)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20,
+            is._21
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18),
+            m.get(is._19),
+            m.get(is._20),
+            m.get(is._21)
+          )
+        }
   }
 
   implicit class Tuple22BatchSyntax[I](
@@ -1542,13 +4180,88 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20,
+          is._21,
+          is._22
+        )
+      )
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20,
+          is._21,
+          is._22
+        )
+      )
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(
+        Set(
+          is._1,
+          is._2,
+          is._3,
+          is._4,
+          is._5,
+          is._6,
+          is._7,
+          is._8,
+          is._9,
+          is._10,
+          is._11,
+          is._12,
+          is._13,
+          is._14,
+          is._15,
+          is._16,
+          is._17,
+          is._18,
+          is._19,
+          is._20,
+          is._21,
+          is._22
+        )
+      )
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -1661,5 +4374,225 @@ object syntax {
           m.get(is._22)
         )
       }
+    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20,
+            is._21,
+            is._22
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18),
+              m.get(is._19),
+              m.get(is._20),
+              m.get(is._21),
+              m.get(is._22)
+            )
+          }
+        }
+    def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchDedupe(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20,
+            is._21,
+            is._22
+          )
+        )
+        .map { df =>
+          df.map { m =>
+            (
+              m.get(is._1),
+              m.get(is._2),
+              m.get(is._3),
+              m.get(is._4),
+              m.get(is._5),
+              m.get(is._6),
+              m.get(is._7),
+              m.get(is._8),
+              m.get(is._9),
+              m.get(is._10),
+              m.get(is._11),
+              m.get(is._12),
+              m.get(is._13),
+              m.get(is._14),
+              m.get(is._15),
+              m.get(is._16),
+              m.get(is._17),
+              m.get(is._18),
+              m.get(is._19),
+              m.get(is._20),
+              m.get(is._21),
+              m.get(is._22)
+            )
+          }
+        }
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20,
+            is._21,
+            is._22
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18),
+            m.get(is._19),
+            m.get(is._20),
+            m.get(is._21),
+            m.get(is._22)
+          )
+        }
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]) =
+      fetch
+        .batchLazy(
+          Set(
+            is._1,
+            is._2,
+            is._3,
+            is._4,
+            is._5,
+            is._6,
+            is._7,
+            is._8,
+            is._9,
+            is._10,
+            is._11,
+            is._12,
+            is._13,
+            is._14,
+            is._15,
+            is._16,
+            is._17,
+            is._18,
+            is._19,
+            is._20,
+            is._21,
+            is._22
+          )
+        )
+        .map { m =>
+          (
+            m.get(is._1),
+            m.get(is._2),
+            m.get(is._3),
+            m.get(is._4),
+            m.get(is._5),
+            m.get(is._6),
+            m.get(is._7),
+            m.get(is._8),
+            m.get(is._9),
+            m.get(is._10),
+            m.get(is._11),
+            m.get(is._12),
+            m.get(is._13),
+            m.get(is._14),
+            m.get(is._15),
+            m.get(is._16),
+            m.get(is._17),
+            m.get(is._18),
+            m.get(is._19),
+            m.get(is._20),
+            m.get(is._21),
+            m.get(is._22)
+          )
+        }
   }
 }
