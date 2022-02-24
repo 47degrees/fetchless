@@ -67,13 +67,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
@@ -112,13 +112,13 @@ object syntax {
      * instance supports it.
      */
     def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batch(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batch(Set(is._1, is._2, is._3))
 
     def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchDedupe(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchDedupe(Set(is._1, is._2, is._3))
 
     def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
-      fetch.batchLazy(is.productIterator.asInstanceOf[Iterator[I]].toSet)
+      fetch.batchLazy(Set(is._1, is._2, is._3))
 
     /**
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
