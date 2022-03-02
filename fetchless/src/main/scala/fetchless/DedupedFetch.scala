@@ -59,9 +59,9 @@ final case class DedupedFetch[F[_], A](unsafeCache: CacheMap, last: A) {
 
 object DedupedFetch {
 
-  def prepopulated[F[_]: Applicative](cache: CacheMap) = DedupedFetch[F, Unit](cache, ())
+  def prepopulated[F[_]](cache: CacheMap): DedupedFetch[F, Unit] = DedupedFetch(cache, ())
 
-  def empty[F[_]: Applicative] = prepopulated(Map.empty)
+  def empty[F[_]]: DedupedFetch[F, Unit] = prepopulated(Map.empty)
 
   /** `cats.Monad` instance for `DedupedFetch` */
   implicit def dedupedFetchM[F[_]: Monad]: Monad[DedupedFetch[F, *]] =
