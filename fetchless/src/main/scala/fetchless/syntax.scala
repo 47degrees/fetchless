@@ -8,18 +8,23 @@ import cats.data.Kleisli
 object syntax {
 
   implicit class FDedupedFetchSyntax[F[_]: FlatMap, A](fdf: F[DedupedFetch[F, A]]) {
-    def alsoFetch[I, B](i: I)(implicit fetch: Fetch[F, I, B]) = fdf.flatMap { df =>
-      df.alsoFetch(i)
+    def alsoFetch[I, B](i: I)(implicit fetch: Fetch[F, I, B]): F[DedupedFetch[F, Option[B]]] =
+      fdf.flatMap { df =>
+        df.alsoFetch(i)
+      }
+    def alsoFetch[I, B](fetch: Fetch[F, I, B])(i: I): F[DedupedFetch[F, Option[B]]] = fdf.flatMap {
+      df =>
+        df.alsoFetch(fetch)(i)
     }
-    def alsoFetch[I, B](fetch: Fetch[F, I, B])(i: I) = fdf.flatMap { df =>
-      df.alsoFetch(fetch)(i)
-    }
-    def alsoFetchAll[I, B](is: Set[I])(implicit fetch: Fetch[F, I, B]) = fdf.flatMap { df =>
+    def alsoFetchAll[I, B](
+        is: Set[I]
+    )(implicit fetch: Fetch[F, I, B]): F[DedupedFetch[F, Map[I, B]]] = fdf.flatMap { df =>
       df.alsoFetchAll(is)
     }
-    def alsoFetchAll[I, B](fetch: Fetch[F, I, B])(is: Set[I]) = fdf.flatMap { df =>
-      df.alsoFetchAll(fetch)(is)
-    }
+    def alsoFetchAll[I, B](fetch: Fetch[F, I, B])(is: Set[I]): F[DedupedFetch[F, Map[I, B]]] =
+      fdf.flatMap { df =>
+        df.alsoFetchAll(fetch)(is)
+      }
   }
 
   implicit class SingleSyntax[I](i: I) {
@@ -42,7 +47,10 @@ object syntax {
     def fetch[A](implicit fetch: Fetch[F, I, A]): F[Option[A]] = fi.flatMap(fetch.single(_))
     def fetchDedupe[A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Option[A]]] =
       fi.flatMap(fetch.singleDedupe(_))
-    def fetchLazy[A](implicit fetch: Fetch[F, I, A], M: Monad[F]) =
+  }
+
+  implicit class EffectfulSyntaxMonad[F[_]: Monad, I](fi: F[I]) {
+    def fetchLazy[A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Option[A]] =
       LazyFetch.liftF(fi).flatMap(i => fetch.singleLazy(i))
   }
 
@@ -52,11 +60,36 @@ object syntax {
      * Fetches all results in the current collection. Will try to batch requests if your Fetch
      * instance supports it.
      */
-    def fetchAll[F[_], A](implicit fetch: Fetch[F, I, A]) =
+    def fetchAll[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[G[Option[A]]] =
+      fetchAllMap[F, A].map { m =>
+        is.map(i => m.get(i))
+      }
+    def fetchAll[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[G[Option[A]]] =
+      fetchAllMap[F, A](fetch).map { m =>
+        is.map(i => m.get(i))
+      }
+    def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(is)
-    def fetchAllDedupe[F[_], A](implicit fetch: Fetch[F, I, A]) =
+    def fetchAllDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedFetch[F, G[Option[A]]]] = fetchAllDedupeMap[F, A].map { d =>
+      d.map { m =>
+        is.map(i => m.get(i))
+      }
+    }
+    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
       fetch.batchDedupe(is)
-    def fetchAllLazy[F[_], A](implicit fetch: Fetch[F, I, A]) =
+    def fetchAllLazy[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyFetch[F, G[Option[A]]] = fetchAllLazyMap[F, A].map { m =>
+      is.map(i => m.get(i))
+    }
+    def fetchAllLazy[F[_]: Functor, A](
+        fetch: Fetch[F, I, A]
+    ): LazyFetch[F, G[Option[A]]] = fetchAllLazyMap[F, A](fetch).map { m =>
+      is.map(i => m.get(i))
+    }
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
       fetch.batchLazy(is)
   }
 
