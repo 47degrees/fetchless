@@ -32,7 +32,12 @@ trait Fetch[F[_], I, A] {
    * A version of `singleDedupe` returning a `LazyFetch` instead, which has not been run yet and can
    * be chained into other requests.
    */
-  def singleLazy(i: I): LazyFetch[F, Option[A]]
+  def singleLazy(i: I): LazyFetch[F, Option[A]] = singleLazyWrap(i)(identity)
+
+  /** Same as `singleLazy`, but allows you to modify the effect once ran. */
+  def singleLazyWrap[B](i: I)(
+      f: F[DedupedFetch[F, Option[A]]] => F[DedupedFetch[F, B]]
+  ): LazyFetch[F, B]
 
   /** Immediately requests a batch of values. */
   def batch(iSet: Set[I]): F[Map[I, A]]
@@ -65,7 +70,12 @@ trait Fetch[F[_], I, A] {
    * A version of `batchDedupe` returning a `LazyFetch` instead, which has not been run yet and can
    * be chained into other requests.
    */
-  def batchLazy(iSet: Set[I]): LazyFetch[F, Map[I, A]]
+  def batchLazy(iSet: Set[I]): LazyFetch[F, Map[I, A]] = batchLazyWrap(iSet)(identity)
+
+  /** Same as `batchLazy`, but allows you to modify the effect once ran. */
+  def batchLazyWrap[B](iSet: Set[I])(
+      f: F[DedupedFetch[F, Map[I, A]]] => F[DedupedFetch[F, B]]
+  ): LazyFetch[F, B]
 
   /**
    * A version of `batchDedupe` returning a `LazyFetch` instead, which has not been run yet and can
@@ -103,8 +113,10 @@ object Fetch {
               }
           }
 
-      def singleLazy(i: I): LazyFetch[F, Option[A]] = LazyFetch(
-        Kleisli(c => singleDedupeCache(i)(c))
+      def singleLazyWrap[B](i: I)(
+          f: F[DedupedFetch[F, Option[A]]] => F[DedupedFetch[F, B]]
+      ): LazyFetch[F, B] = LazyFetch(
+        Kleisli(c => f(singleDedupeCache(i)(c)))
       )
 
       def batch(iSet: Set[I]): F[Map[I, A]] = fb(iSet)
@@ -133,8 +145,10 @@ object Fetch {
         }
       }
 
-      def batchLazy(iSet: Set[I]): LazyFetch[F, Map[I, A]] = LazyFetch(
-        Kleisli(c => batchDedupeCache(iSet)(c))
+      def batchLazyWrap[B](iSet: Set[I])(
+          f: F[DedupedFetch[F, Map[I, A]]] => F[DedupedFetch[F, B]]
+      ): LazyFetch[F, B] = LazyFetch(
+        Kleisli(c => f(batchDedupeCache(iSet)(c)))
       )
     }
 

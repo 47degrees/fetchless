@@ -21,3 +21,14 @@ lazy val fetchless = crossProject(JSPlatform, JVMPlatform)
 lazy val fetchlessJVM = fetchless.jvm
 lazy val fetchlessJS = fetchless.js
   .settings(crossScalaVersions := scala2Versions)
+
+lazy val fetchlessDebug = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(crossScalaVersions := allScalaVersions)
+  .dependsOn(fetchless)
+
+lazy val root = (project in file("."))
+  .settings(
+    publish / skip := true
+  )
+  .aggregate(fetchlessJVM, fetchlessJS)
