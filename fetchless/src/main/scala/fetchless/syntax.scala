@@ -77,6 +77,13 @@ object syntax {
         is.map(i => m.get(i))
       }
     }
+    def fetchAllDedupe[F[_]: Functor, A](
+        fetch: Fetch[F, I, A]
+    ): F[DedupedFetch[F, G[Option[A]]]] = fetchAllDedupeMap[F, A](fetch).map { d =>
+      d.map { m =>
+        is.map(i => m.get(i))
+      }
+    }
     def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
       fetch.batchDedupe(is)
     def fetchAllLazy[F[_]: Functor, A](implicit
