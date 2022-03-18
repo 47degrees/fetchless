@@ -20,6 +20,22 @@ object ProjectPlugin extends AutoPlugin {
           )
       )
 
+    lazy val http4sDependencies =
+      Seq(
+        libraryDependencies ++=
+          Seq(
+            "org.http4s" %%% "http4s-client" % "1.0.0-M31"
+          )
+      )
+
+    lazy val http4s023Dependencies =
+      Seq(
+        libraryDependencies ++=
+          Seq(
+            "org.http4s" %%% "http4s-client" % "0.23.10"
+          )
+      )
+
     lazy val micrositeSettings: Seq[Def.Setting[_]] = Seq(
       micrositeName             := "Fetchless",
       micrositeDescription      := "Automatic data batching for Scala",
