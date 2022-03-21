@@ -7,6 +7,11 @@ import scala.concurrent.duration.FiniteDuration
 import cats.Parallel
 import cats.Monad
 import cats.data.Kleisli
+import cats.ApplicativeError
+import cats.ApplicativeThrow
+import cats.MonadThrow
+import cats.Contravariant
+import cats.arrow.Profunctor
 
 /**
  * The ability to fetch values `A` given an ID `I`. Represents a data source such as a database,
@@ -83,6 +88,24 @@ trait Fetch[F[_], I, A] {
    */
   def batchLazy[G[_]: Traverse](is: G[I]): LazyFetch[F, Map[I, A]] =
     batchLazy(is.toIterable.toSet)
+
+  /**
+   * Returns a new `Fetch` instance that recovers from errors, derived from the current `Fetch`
+   * instance. For example, if you are given an unsafe `Fetch` instance that will raise errors on
+   * conditions you want to recover from gracefully, you can specify them using this wrapper.
+   *
+   * This takes two arguments, both `PartialFunction` from `Throwable` to the result type of
+   * `single` and `batch` operations respectively.
+   */
+  def recoverWith(
+      pfSingle: PartialFunction[Throwable, F[Option[A]]]
+  )(
+      pfBatch: PartialFunction[Throwable, F[Map[I, A]]]
+  )(implicit F: MonadThrow[F]): Fetch[F, I, A] =
+    Fetch.default[F, I, A](id)(
+      single(_).recoverWith(pfSingle),
+      batch(_).recoverWith(pfBatch)
+    )
 }
 
 object Fetch {
@@ -204,4 +227,35 @@ object Fetch {
     i => i.some.pure[F],
     iSet => iSet.toList.map(i => i -> i).toMap.pure[F]
   )
+
+  /**
+   * A `Profunctor` instance for `Fetch` so as to allow for calling `lmap`, `rmap`, and `dimap`
+   * syntax on a valid `Fetch` instance. This will let you change the ID type (`lmap`) and the
+   * output value type (`rmap`) without having to manually do the wrapping yourself.
+   *
+   * Note that efficiency when using `lmap` or `dimap` might be an issue since those cases need to
+   * create intermediary data structures to determine which input IDs match to which output IDs. It
+   * might be faster in some cases to just create your own optimized `Fetch` instance if you are
+   * planning on mapping the input type.
+   */
+  implicit def fetchProfunctor[F[_]: Monad]: Profunctor[Fetch[F, *, *]] =
+    new Profunctor[Fetch[F, *, *]] {
+      def dimap[A, B, C, D](fab: Fetch[F, A, B])(f: C => A)(g: B => D): Fetch[F, C, D] =
+        default[F, C, D](fab.id)(
+          i => fab.single(f(i)).map(_.map(g)),
+          { is =>
+            val setMap = is.toList.map(c => f(c) -> c).toMap
+            val inSet  = setMap.keySet
+            fab.batch(inSet).map(m => m.map[C, D] { case (a, b) => setMap.apply(a) -> g(b) })
+          }
+        )
+
+      // Override for efficiency, don't think we'd gain much overriding the lmap case
+      // since that case still has to do the set/map behavior defined above
+      override def rmap[A, B, C](fab: Fetch[F, A, B])(f: B => C): Fetch[F, A, C] =
+        default[F, A, C](fab.id)(
+          i => fab.single(i).map(_.map(f)),
+          is => fab.batch(is).map(_.view.mapValues(f).toMap)
+        )
+    }
 }
