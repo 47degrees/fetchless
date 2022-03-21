@@ -20,6 +20,12 @@ object ProjectPlugin extends AutoPlugin {
           )
       )
 
+    lazy val doobieDependencies = Seq(
+      libraryDependencies ++= Seq(
+        "org.tpolecat" %% "doobie-core" % "1.0.0-RC2"
+      )
+    )
+
     lazy val http4sDependencies =
       Seq(
         libraryDependencies ++=

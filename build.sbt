@@ -66,3 +66,9 @@ lazy val fetchlessHttp4s023 = crossProject(JSPlatform, JVMPlatform)
 lazy val fetchlessHttp4s023JVM = fetchlessHttp4s023.jvm
 
 lazy val fetchlessHttp4s023JS = fetchlessHttp4s023.js
+
+lazy val fetchlessDoobie = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(doobieDependencies)
+  .settings(crossScalaVersions := allScalaVersions)
+  .dependsOn(fetchless % "compile->compile;test->test")
