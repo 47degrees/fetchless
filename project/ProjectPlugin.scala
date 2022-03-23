@@ -16,7 +16,16 @@ object ProjectPlugin extends AutoPlugin {
         libraryDependencies ++=
           Seq(
             "org.typelevel" %%% "cats-effect"         % "3.3.4",
+            "co.fs2"         %% "fs2-core"            % "3.2.5",
             "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7" % "test"
+          )
+      )
+
+    lazy val fs2Dependencies =
+      Seq(
+        libraryDependencies ++=
+          Seq(
+            "co.fs2" %% "fs2-core" % "3.2.5"
           )
       )
 

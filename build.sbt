@@ -23,6 +23,9 @@ lazy val root = (project in file("."))
     fetchlessJS,
     fetchlessDebugJVM,
     fetchlessDebugJS,
+    fetchlessDoobieJVM,
+    fetchlessStreamingJVM,
+    fetchlessStreamingJS,
     fetchlessHttp4sJVM,
     fetchlessHttp4sJS,
     fetchlessHttp4s023JVM,
@@ -47,28 +50,38 @@ lazy val fetchlessDebugJVM = fetchlessDebug.jvm
 lazy val fetchlessDebugJS = fetchlessDebug.js
   .settings(crossScalaVersions := scala2Versions)
 
+lazy val fetchlessStreaming = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .settings(fs2Dependencies)
+  .settings(crossScalaVersions := allScalaVersions)
+  .dependsOn(fetchless % "compile->compile;test->test")
+
+lazy val fetchlessStreamingJVM = fetchlessStreaming.jvm
+lazy val fetchlessStreamingJS = fetchlessStreaming.js
+  .settings(crossScalaVersions := allScalaVersions)
+
 lazy val fetchlessHttp4s = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .settings(http4sDependencies)
   .settings(crossScalaVersions := scalaVersions213Plus)
-  .dependsOn(fetchless % "compile->compile;test->test")
+  .dependsOn(fetchlessStreaming % "compile->compile;test->test")
 
 lazy val fetchlessHttp4sJVM = fetchlessHttp4s.jvm
-
-lazy val fetchlessHttp4sJS = fetchlessHttp4s.js
+lazy val fetchlessHttp4sJS  = fetchlessHttp4s.js
 
 lazy val fetchlessHttp4s023 = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .settings(http4s023Dependencies)
   .settings(crossScalaVersions := allScalaVersions)
-  .dependsOn(fetchless % "compile->compile;test->test")
+  .dependsOn(fetchlessStreaming % "compile->compile;test->test")
 
 lazy val fetchlessHttp4s023JVM = fetchlessHttp4s023.jvm
-
-lazy val fetchlessHttp4s023JS = fetchlessHttp4s023.js
+lazy val fetchlessHttp4s023JS  = fetchlessHttp4s023.js
 
 lazy val fetchlessDoobie = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .settings(doobieDependencies)
   .settings(crossScalaVersions := allScalaVersions)
-  .dependsOn(fetchless % "compile->compile;test->test")
+  .dependsOn(fetchlessStreaming % "compile->compile;test->test")
+
+lazy val fetchlessDoobieJVM = fetchlessDoobie.jvm

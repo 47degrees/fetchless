@@ -11,14 +11,14 @@ import cats.Traverse
 import cats.data.Validated
 import cats.CommutativeApplicative
 import cats.data.Kleisli
-import LazyBatch.LazyBatchReqs
+import LazyBatchRequest.LazyBatchRequestReqs
 
-final case class LazyBatch[F[_], A](
-    reqs: LazyBatchReqs[F],
-    getResult: Kleisli[F, CacheMap, DedupedFetch[F, A]]
+final case class LazyBatchRequest[F[_], A](
+    reqs: LazyBatchRequestReqs[F],
+    getResult: Kleisli[F, CacheMap, DedupedRequest[F, A]]
 ) {
 
-  def absorb[B](lbn: LazyBatch[F, B])(implicit F: Applicative[F]) = {
+  def absorb[B](lbn: LazyBatchRequest[F, B])(implicit F: Applicative[F]) = {
     val newReqs = lbn.reqs.toList.map { case (k, (set, f)) =>
       reqs.get(k) match {
         case Some((ids, f)) => (k, (set ++ ids, f))
@@ -26,7 +26,7 @@ final case class LazyBatch[F[_], A](
       }
     }.toMap
     val combinedReqs = reqs ++ newReqs
-    LazyBatch(
+    LazyBatchRequest(
       reqs = combinedReqs,
       getResult = lbn.getResult
     )
@@ -34,29 +34,29 @@ final case class LazyBatch[F[_], A](
 
   def alsoOne[I, B](
       fetch: Fetch[F, I, B]
-  )(i: I)(implicit F: Applicative[F]): LazyBatch[F, Option[B]] =
+  )(i: I)(implicit F: Applicative[F]): LazyBatchRequest[F, Option[B]] =
     reqs.get(fetch.id) match {
       case Some((is, f)) =>
         val nextIs = is + i
-        LazyBatch(
+        LazyBatchRequest(
           reqs + (fetch.id -> (nextIs, f)),
           Kleisli(c =>
-            DedupedFetch
+            DedupedRequest
               .prepopulated[F](c)
               .as(c.get(i -> fetch.id).flatten.asInstanceOf[Option[B]])
               .pure[F]
           )
         )
       case None =>
-        val batchAny: (Set[Any], CacheMap) => F[DedupedFetch[F, Map[Any, Any]]] = {
+        val batchAny: (Set[Any], CacheMap) => F[DedupedRequest[F, Map[Any, Any]]] = {
           case (anySet, cacheMap) =>
             val res = fetch.batchDedupeCache(anySet.asInstanceOf[Set[I]])(cacheMap)
             res.map(df => df.map(_.asInstanceOf[Map[Any, Any]]))
         }
-        LazyBatch(
+        LazyBatchRequest(
           reqs = Map(fetch.id -> (Set(i).asInstanceOf[Set[Any]] -> batchAny)),
           getResult = Kleisli(c =>
-            DedupedFetch
+            DedupedRequest
               .prepopulated[F](c)
               .as(c.get(i -> fetch.id).flatten.asInstanceOf[Option[B]])
               .pure[F]
@@ -66,14 +66,14 @@ final case class LazyBatch[F[_], A](
 
   def alsoMany[I, B](
       fetch: Fetch[F, I, B]
-  )(newIs: Set[I])(implicit F: Applicative[F]): LazyBatch[F, Map[I, B]] =
+  )(newIs: Set[I])(implicit F: Applicative[F]): LazyBatchRequest[F, Map[I, B]] =
     reqs.get(fetch.id) match {
       case Some((is, f)) =>
         val nextIs = is ++ newIs
-        LazyBatch(
+        LazyBatchRequest(
           reqs = reqs + (fetch.id -> (nextIs, f)),
           getResult = Kleisli(c =>
-            DedupedFetch
+            DedupedRequest
               .prepopulated[F](c)
               .as(
                 c.toList
@@ -87,18 +87,17 @@ final case class LazyBatch[F[_], A](
           )
         )
       case None =>
-        val batchAny: (Set[Any], CacheMap) => F[DedupedFetch[F, Map[Any, Any]]] = {
+        val batchAny: (Set[Any], CacheMap) => F[DedupedRequest[F, Map[Any, Any]]] = {
           case (anySet, cacheMap) =>
             val res = fetch.batchDedupeCache(anySet.asInstanceOf[Set[I]])(cacheMap)
             res.map(df => df.map(_.asInstanceOf[Map[Any, Any]]))
         }
-        LazyBatch(
+        LazyBatchRequest(
           reqs = Map(fetch.id -> (newIs.asInstanceOf[Set[Any]] -> batchAny)),
           getResult = Kleisli(c =>
-            DedupedFetch
-              .dedupedFetchA[F]
+            DedupedRequest
+              .prepopulated[F](c)
               .as(
-                DedupedFetch.prepopulated(c),
                 c.toList
                   .collect { case ((i, fetch.id), v) =>
                     v.map(someV => i -> someV).asInstanceOf[Option[(I, B)]]
@@ -111,29 +110,29 @@ final case class LazyBatch[F[_], A](
         )
     }
 
-  def run(implicit F: Monad[F], P: Parallel[F]): F[DedupedFetch[F, A]] =
-    LazyBatch.runInternal[F, A](getResult).apply(reqs, Map.empty)
+  def run(implicit F: Monad[F], P: Parallel[F]): F[DedupedRequest[F, A]] =
+    LazyBatchRequest.runInternal[F, A](getResult).apply(reqs, Map.empty)
 
-  def runWithCache(cache: CacheMap)(implicit F: Monad[F], P: Parallel[F]): F[DedupedFetch[F, A]] =
-    LazyBatch.runInternal[F, A](getResult).apply(reqs, cache)
+  def runWithCache(cache: CacheMap)(implicit F: Monad[F], P: Parallel[F]): F[DedupedRequest[F, A]] =
+    LazyBatchRequest.runInternal[F, A](getResult).apply(reqs, cache)
 
 }
 
-object LazyBatch {
+object LazyBatchRequest {
 
-  type LazyBatchGetter[F[_]] = (Set[Any], CacheMap) => F[DedupedFetch[F, Map[Any, Any]]]
+  type LazyBatchRequestGetter[F[_]] = (Set[Any], CacheMap) => F[DedupedRequest[F, Map[Any, Any]]]
 
-  type LazyBatchReqs[F[_]] =
-    Map[String, (Set[Any], LazyBatchGetter[F])]
+  type LazyBatchRequestReqs[F[_]] =
+    Map[String, (Set[Any], LazyBatchRequestGetter[F])]
 
   private def runInternal[F[_]: Monad: Parallel, A](
-      getResult: Kleisli[F, CacheMap, DedupedFetch[F, A]]
-  ): (LazyBatchReqs[F], CacheMap) => F[DedupedFetch[F, A]] = { case (reqs, cacheMap) =>
+      getResult: Kleisli[F, CacheMap, DedupedRequest[F, A]]
+  ): (LazyBatchRequestReqs[F], CacheMap) => F[DedupedRequest[F, A]] = { case (reqs, cacheMap) =>
     val result = reqs.toList.parTraverse { case (_, (ids, f)) => f(ids, cacheMap) }
     result
       .map(
         _.foldLeft(
-          DedupedFetch
+          DedupedRequest
             .prepopulated[F](cacheMap)
             .as(Map.empty[Any, Any])
         ) { case (df, next) =>
@@ -143,25 +142,25 @@ object LazyBatch {
       .flatMap(getResult.run)
   }
 
-  def liftF[F[_]: Applicative, A](fa: F[A]): LazyBatch[F, A] = LazyBatch(
+  def liftF[F[_]: Applicative, A](fa: F[A]): LazyBatchRequest[F, A] = LazyBatchRequest(
     Map.empty,
-    Kleisli.liftF(fa.map(a => DedupedFetch.dedupedFetchF[F].as(DedupedFetch.empty[F], a)))
+    Kleisli.liftF(fa.map(a => DedupedRequest.empty[F].as(a)))
   )
 
   def single[F[_]: Monad, I, A](fetch: Fetch[F, I, A])(i: I) = {
-    val batchAny: (Set[Any], CacheMap) => F[DedupedFetch[F, Map[Any, Any]]] = {
+    val batchAny: (Set[Any], CacheMap) => F[DedupedRequest[F, Map[Any, Any]]] = {
       case (anySet, cacheMap) =>
         val res = fetch.batchDedupeCache(anySet.asInstanceOf[Set[I]])(cacheMap)
         res.map { df =>
           df.map(_.asInstanceOf[Map[Any, Any]])
         }
     }
-    LazyBatch[F, Option[A]](
+    LazyBatchRequest[F, Option[A]](
       Map(
         fetch.id -> (Set[Any](i), batchAny)
       ),
       Kleisli(c =>
-        DedupedFetch
+        DedupedRequest
           .prepopulated[F](c)
           .as(c.get(i -> fetch.id).flatten.asInstanceOf[Option[A]])
           .pure[F]
@@ -170,15 +169,15 @@ object LazyBatch {
   }
 
   def many[F[_]: Monad, I, A](fetch: Fetch[F, I, A])(is: Set[I]) = {
-    val batchAny: (Set[Any], CacheMap) => F[DedupedFetch[F, Map[Any, Any]]] = {
+    val batchAny: (Set[Any], CacheMap) => F[DedupedRequest[F, Map[Any, Any]]] = {
       case (anySet, cacheMap) =>
         val res = fetch.batchDedupeCache(anySet.asInstanceOf[Set[I]])(cacheMap)
         res.map(df => df.map(_.asInstanceOf[Map[Any, Any]]))
     }
-    LazyBatch(
+    LazyBatchRequest(
       reqs = Map(fetch.id -> (is.asInstanceOf[Set[Any]] -> batchAny)),
       getResult = Kleisli(c =>
-        DedupedFetch
+        DedupedRequest
           .prepopulated[F](c)
           .as(
             c.toList
@@ -194,13 +193,15 @@ object LazyBatch {
     )
   }
 
-  implicit def lazyBatchA[F[_]: Monad]: CommutativeApplicative[
-    LazyBatch[F, *]
+  implicit def lazyBatchRequestA[F[_]: Monad]: CommutativeApplicative[
+    LazyBatchRequest[F, *]
   ] =
-    new CommutativeApplicative[LazyBatch[F, *]] {
-      def ap[A, B](ff: LazyBatch[F, A => B])(fa: LazyBatch[F, A]): LazyBatch[F, B] = {
+    new CommutativeApplicative[LazyBatchRequest[F, *]] {
+      def ap[A, B](
+          ff: LazyBatchRequest[F, A => B]
+      )(fa: LazyBatchRequest[F, A]): LazyBatchRequest[F, B] = {
         val absorbed = fa.absorb(ff)
-        LazyBatch(
+        LazyBatchRequest(
           absorbed.reqs,
           ff.getResult.flatMap { df =>
             fa.getResult.map(ndf => df.absorb(ndf).map(df.last))
@@ -208,22 +209,25 @@ object LazyBatch {
         )
       }
 
-      def pure[A](x: A): LazyBatch[F, A] =
-        LazyBatch(
+      def pure[A](x: A): LazyBatchRequest[F, A] =
+        LazyBatchRequest(
           Map.empty,
-          Kleisli(c => DedupedFetch.prepopulated[F](c).absorb(DedupedFetch.empty[F].as(x)).pure[F])
+          Kleisli(c =>
+            DedupedRequest.prepopulated[F](c).absorb(DedupedRequest.empty[F].as(x)).pure[F]
+          )
         )
 
     }
 
-  implicit def lazyBatchF[F[_]: Applicative]: Functor[
-    LazyBatch[F, *]
+  implicit def lazyBatchRequestF[F[_]: Applicative]: Functor[
+    LazyBatchRequest[F, *]
   ] =
-    new Functor[LazyBatch[F, *]] {
+    new Functor[LazyBatchRequest[F, *]] {
 
-      def map[A, B](fa: LazyBatch[F, A])(f: A => B): LazyBatch[F, B] = LazyBatch(
-        fa.reqs,
-        fa.getResult.map(df => df.map(f))
-      )
+      def map[A, B](fa: LazyBatchRequest[F, A])(f: A => B): LazyBatchRequest[F, B] =
+        LazyBatchRequest(
+          fa.reqs,
+          fa.getResult.map(df => df.map(f))
+        )
     }
 }

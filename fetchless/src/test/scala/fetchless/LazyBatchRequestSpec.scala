@@ -4,7 +4,7 @@ import munit.FunSuite
 import cats.Id
 import cats.syntax.all._
 
-class LazyBatchSpec extends FunSuite {
+class LazyBatchRequestSpec extends FunSuite {
 
   implicit val intFetch = Fetch.singleSequenced[Id, Int, Int]("intFetch") { i =>
     Some(i)
@@ -14,20 +14,20 @@ class LazyBatchSpec extends FunSuite {
     Some(i)
   }
 
-  test("LazyBatch lets you batch multiple times") {
-    val one   = LazyBatch.single(intFetch)(1)
-    val two   = LazyBatch.single(intFetch)(2)
-    val three = LazyBatch.single(intFetch)(3)
+  test("LazyBatchRequest lets you batch multiple times") {
+    val one   = LazyBatchRequest.single(intFetch)(1)
+    val two   = LazyBatchRequest.single(intFetch)(2)
+    val three = LazyBatchRequest.single(intFetch)(3)
 
     val result = (one, two, three).tupled.run
 
     assertEquals(result.last, (Some(1), Some(2), Some(3)))
   }
 
-  test("LazyBatch lets you combine multiple explicit batches from multiple sources") {
-    val fewInts     = LazyBatch.many(intFetch)(Set(1, 2, 3))
-    val two         = LazyBatch.single(intFetch)(2)
-    val coupleBools = LazyBatch.many(boolFetch)(Set(true, false))
+  test("LazyBatchRequest lets you combine multiple explicit batches from multiple sources") {
+    val fewInts     = LazyBatchRequest.many(intFetch)(Set(1, 2, 3))
+    val two         = LazyBatchRequest.single(intFetch)(2)
+    val coupleBools = LazyBatchRequest.many(boolFetch)(Set(true, false))
 
     val result = (fewInts, two, coupleBools).tupled.run
 

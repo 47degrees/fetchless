@@ -45,13 +45,13 @@ Immediate fetch traverse result
 1.12204425E7
 Immediate deduped fetch traverse result
 1.58746375E7
-LazyFetch traverse result
+LazyRequest traverse result
 5.33710375E7
-LazyBatch set result
+LazyBatchRequest set result
 6.621083E7
-LazyBatch traverse result
+LazyBatchRequest traverse result
 1.01090145E8
-LazyFetch parTraverse result
+LazyRequest parTraverse result
 1.54424665E8
 ```
 
@@ -63,10 +63,10 @@ Fetch traverse result
 7.6349248325E9
 ```
 
-In each case, the benchmark involves traversing over a list of 50,000 integers and performing a fetch, except for `LazyBatch set` which is an explicit batch and not a traversal.
+In each case, the benchmark involves traversing over a list of 50,000 integers and performing a fetch, except for `LazyBatchRequest set` which is an explicit batch and not a traversal.
 For the `immediate` case up top, that is for a direct fetch with no deduping or auto-batching support.
-`LazyFetch` supports deduping and sequencing, but not auto-batching, and `LazyBatch` is an applicative type that supports batches only.
-So in the absolute worst case for Fetchless, it appears that starting with `LazyFetch` and using `parTraverse` to re-encode as a single `LazyBatch` takes well over an order of magnitude less time to perform.
+`LazyRequest` supports deduping and sequencing, but not auto-batching, and `LazyBatchRequest` is an applicative type that supports batches only.
+So in the absolute worst case for Fetchless, it appears that starting with `LazyRequest` and using `parTraverse` to re-encode as a single `LazyBatchRequest` takes well over an order of magnitude less time to perform.
 It's still possible that future changes will bridge this gap slowly, as more features and functionality are added or possible bugs are fixed, but this is a very promising start and shows that even if you choose the slowest possible fetch option in Fetchless, it is still faster than Fetch.
 
 ### Flexibility
@@ -162,21 +162,21 @@ val tupledFetch: IO[(Option[Int], Option[Int], Option[Int])] = (5, 5, 5).fetchTu
 
 This also side-steps the problem of needing to provide explicit support for popular user-requested features, since all fetches are always directly implemented in terms of `F[_]` and can be manipulated with whatever libraries and combinators users already use (including whatever is in the CE3 standard library)
 
-## DedupedFetch
+## DedupedRequest
 
 One feature not supported in a standard fetch is deduping, since that requires some kind of context to pass around.
-I've added a type `DedupedFetch` and operators to fetch using this provided context, so that in any context you can make very efficient fetches that depend on previous fetches for caching and deduplication.
+I've added a type `DedupedRequest` and operators to fetch using this provided context, so that in any context you can make very efficient fetches that depend on previous fetches for caching and deduplication.
 
-## LazyFetch and LazyBatch
+## LazyRequest and LazyBatchRequest
 
-The `Fetch` instance can not only deduplicate fetches with `DedupedFetch` but it can also create lazy fetches that approximate the behaavior found in the original `Fetch` library with regards to not only deduplication, but also automatic batching.
+The `Fetch` instance can not only deduplicate fetches with `DedupedRequest` but it can also create lazy fetches that approximate the behaavior found in the original `Fetch` library with regards to not only deduplication, but also automatic batching.
 
-A `LazyFetch` is created when you call `.fetchLazy` on an ID, or call `.singleLazy`/`.batchLazy` on a `Fetch` instance.
-It is essentially just a wrapper type that encodes the intention to chain fetch calls together, so you can `flatMap` multiples of them in sequence and raise effects into its context with `LazyFetch.liftF`/`LazyBatch.liftF`.
+A `LazyRequest` is created when you call `.fetchLazy` on an ID, or call `.singleLazy`/`.batchLazy` on a `Fetch` instance.
+It is essentially just a wrapper type that encodes the intention to chain fetch calls together, so you can `flatMap` multiples of them in sequence and raise effects into its context with `LazyRequest.liftF`/`LazyBatchRequest.liftF`.
 
-`LazyBatch` is the parallel of `LazyFetch` which is not monadic, but only `Applicative` and represents the intention to group multiple fetches into a batch.
+`LazyBatchRequest` is the parallel of `LazyRequest` which is not monadic, but only `Applicative` and represents the intention to group multiple fetches into a batch.
 You can combine them together with `.tupled` and `.traverse`-style methods that work for any `Applicative` and it will guarantee to put all of your requests into a single batch per-fetch-instance.
-However, you cannot chain them together, so you need to convert back and forth between `LazyFetch` and `LazyBatch` to keep dependent sequencing along with auto-batching.
-This is done with the `Parallel` instance for `LazyFetch` so you can call `.parTupled`/`.parTraverse` and so on on your independent fetches, and get automatic deduplication and batching just like you did in the original Fetch library, only now you must explicitly opt-in to auto-batching.
+However, you cannot chain them together, so you need to convert back and forth between `LazyRequest` and `LazyBatchRequest` to keep dependent sequencing along with auto-batching.
+This is done with the `Parallel` instance for `LazyRequest` so you can call `.parTupled`/`.parTraverse` and so on on your independent fetches, and get automatic deduplication and batching just like you did in the original Fetch library, only now you must explicitly opt-in to auto-batching.
 
 For more details, please see the included tests.

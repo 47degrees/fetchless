@@ -10,24 +10,24 @@ class DedupingSpec extends FunSuite {
 
   val exampleKey = ("1" -> "str")
 
-  test("DedupedFetch absorb") {
-    val dedupeA = DedupedFetch(Map(exampleKey -> 1.some), none[Int])
-    val dedupeB = DedupedFetch(Map(exampleKey -> none[Int]), none[Int])
+  test("DedupedRequest absorb") {
+    val dedupeA = DedupedRequest(Map(exampleKey -> 1.some), none[Int])
+    val dedupeB = DedupedRequest(Map(exampleKey -> none[Int]), none[Int])
 
     assert(dedupeA.absorb(dedupeB).unsafeCache == Map(exampleKey -> none[Int]))
   }
 
-  test("DedupedFetch flatMap") {
+  test("DedupedRequest flatMap") {
     val key2    = ("2" -> "str")
-    val dedupeA = DedupedFetch[Id, Option[Int]](Map(exampleKey -> 1.some), 4.some)
-    val dedupeB = DedupedFetch[Id, Option[Int]](Map(key2 -> 2.some), 5.some)
+    val dedupeA = DedupedRequest[Id, Option[Int]](Map(exampleKey -> 1.some), 4.some)
+    val dedupeB = DedupedRequest[Id, Option[Int]](Map(key2 -> 2.some), 5.some)
 
     val result = dedupeA.flatMap {
       case None    => dedupeB
       case Some(i) => dedupeB.copy(last = i.some)
     }
 
-    val expected = DedupedFetch[Id, Option[Int]](
+    val expected = DedupedRequest[Id, Option[Int]](
       Map(
         exampleKey -> 1.some,
         key2       -> 2.some

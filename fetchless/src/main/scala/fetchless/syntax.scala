@@ -7,21 +7,21 @@ import cats.data.Kleisli
 
 object syntax {
 
-  implicit class FDedupedFetchSyntax[F[_]: FlatMap, A](fdf: F[DedupedFetch[F, A]]) {
-    def alsoFetch[I, B](i: I)(implicit fetch: Fetch[F, I, B]): F[DedupedFetch[F, Option[B]]] =
+  implicit class FDedupedRequestSyntax[F[_]: FlatMap, A](fdf: F[DedupedRequest[F, A]]) {
+    def alsoFetch[I, B](i: I)(implicit fetch: Fetch[F, I, B]): F[DedupedRequest[F, Option[B]]] =
       fdf.flatMap { df =>
         df.alsoFetch(i)
       }
-    def alsoFetch[I, B](fetch: Fetch[F, I, B])(i: I): F[DedupedFetch[F, Option[B]]] = fdf.flatMap {
-      df =>
+    def alsoFetch[I, B](fetch: Fetch[F, I, B])(i: I): F[DedupedRequest[F, Option[B]]] =
+      fdf.flatMap { df =>
         df.alsoFetch(fetch)(i)
-    }
+      }
     def alsoFetchAll[I, B](
         is: Set[I]
-    )(implicit fetch: Fetch[F, I, B]): F[DedupedFetch[F, Map[I, B]]] = fdf.flatMap { df =>
+    )(implicit fetch: Fetch[F, I, B]): F[DedupedRequest[F, Map[I, B]]] = fdf.flatMap { df =>
       df.alsoFetchAll(is)
     }
-    def alsoFetchAll[I, B](fetch: Fetch[F, I, B])(is: Set[I]): F[DedupedFetch[F, Map[I, B]]] =
+    def alsoFetchAll[I, B](fetch: Fetch[F, I, B])(is: Set[I]): F[DedupedRequest[F, Map[I, B]]] =
       fdf.flatMap { df =>
         df.alsoFetchAll(fetch)(is)
       }
@@ -33,9 +33,9 @@ object syntax {
      * Fetches a single result. Does not try to auto-batch requests.
      */
     def fetch[F[_], A](implicit fetch: Fetch[F, I, A]): F[Option[A]] = fetch.single(i)
-    def fetchDedupe[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Option[A]]] =
+    def fetchDedupe[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedRequest[F, Option[A]]] =
       fetch.singleDedupe(i)
-    def fetchLazy[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Option[A]] =
+    def fetchLazy[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Option[A]] =
       fetch.singleLazy(i)
   }
 
@@ -45,13 +45,13 @@ object syntax {
      * Fetches a single result. Does not try to auto-batch requests.
      */
     def fetch[A](implicit fetch: Fetch[F, I, A]): F[Option[A]] = fi.flatMap(fetch.single(_))
-    def fetchDedupe[A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Option[A]]] =
+    def fetchDedupe[A](implicit fetch: Fetch[F, I, A]): F[DedupedRequest[F, Option[A]]] =
       fi.flatMap(fetch.singleDedupe(_))
   }
 
   implicit class EffectfulSyntaxMonad[F[_]: Monad, I](fi: F[I]) {
-    def fetchLazy[A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Option[A]] =
-      LazyFetch.liftF(fi).flatMap(i => fetch.singleLazy(i))
+    def fetchLazy[A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Option[A]] =
+      LazyRequest.liftF(fi).flatMap(i => fetch.singleLazy(i))
   }
 
   implicit class TraverseBatchSyntax[G[_]: Traverse, I](is: G[I]) {
@@ -72,31 +72,33 @@ object syntax {
       fetch.batch(is)
     def fetchAllDedupe[F[_]: Functor, A](implicit
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, G[Option[A]]]] = fetchAllDedupeMap[F, A].map { d =>
+    ): F[DedupedRequest[F, G[Option[A]]]] = fetchAllDedupeMap[F, A].map { d =>
       d.map { m =>
         is.map(i => m.get(i))
       }
     }
     def fetchAllDedupe[F[_]: Functor, A](
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, G[Option[A]]]] = fetchAllDedupeMap[F, A](fetch).map { d =>
+    ): F[DedupedRequest[F, G[Option[A]]]] = fetchAllDedupeMap[F, A](fetch).map { d =>
       d.map { m =>
         is.map(i => m.get(i))
       }
     }
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(is)
     def fetchAllLazy[F[_]: Functor, A](implicit
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, G[Option[A]]] = fetchAllLazyMap[F, A].map { m =>
+    ): LazyRequest[F, G[Option[A]]] = fetchAllLazyMap[F, A].map { m =>
       is.map(i => m.get(i))
     }
     def fetchAllLazy[F[_]: Functor, A](
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, G[Option[A]]] = fetchAllLazyMap[F, A](fetch).map { m =>
+    ): LazyRequest[F, G[Option[A]]] = fetchAllLazyMap[F, A](fetch).map { m =>
       is.map(i => m.get(i))
     }
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(is)
   }
 
@@ -109,10 +111,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2))
 
     /**
@@ -129,25 +133,25 @@ object syntax {
       }
     def fetchTupledDedupe[F[_]: Monad, A](implicit
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2)).map { df =>
         df.map(m => (m.get(is._1), m.get(is._2)))
       }
     def fetchTupledDedupe[F[_]: Monad, A](
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2)).map { df =>
         df.map(m => (m.get(is._1), m.get(is._2)))
       }
     def fetchTupledLazy[F[_]: Monad, A](implicit
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2)).map { m =>
         (m.get(is._1), m.get(is._2))
       }
     def fetchTupledLazy[F[_]: Monad, A](
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2)).map { m =>
         (m.get(is._1), m.get(is._2))
       }
@@ -162,10 +166,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2, is._3))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3))
 
     /**
@@ -184,25 +190,25 @@ object syntax {
       }
     def fetchTupledDedupe[F[_]: Monad, A](implicit
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3)).map { df =>
         df.map(m => (m.get(is._1), m.get(is._2), m.get(is._3)))
       }
     def fetchTupledDedupe[F[_]: Monad, A](
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3)).map { df =>
         df.map(m => (m.get(is._1), m.get(is._2), m.get(is._3)))
       }
     def fetchTupledLazy[F[_]: Monad, A](implicit
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2, is._3)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3))
       }
     def fetchTupledLazy[F[_]: Monad, A](
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2, is._3)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3))
       }
@@ -217,10 +223,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2, is._3, is._4))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4))
 
     /**
@@ -241,7 +249,7 @@ object syntax {
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A], Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A], Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4)).map { df =>
         df.map { m =>
           (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
@@ -249,7 +257,7 @@ object syntax {
       }
     def fetchTupledDedupe[F[_]: Functor, A](
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A], Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A], Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4)).map { df =>
         df.map { m =>
           (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
@@ -257,13 +265,13 @@ object syntax {
       }
     def fetchTupledLazy[F[_]: Monad, A](implicit
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A], Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
       }
     def fetchTupledLazy[F[_]: Monad, A](
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A], Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4))
       }
@@ -278,10 +286,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5))
 
     /**
@@ -303,7 +313,7 @@ object syntax {
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A], Option[A], Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5)).map { df =>
         df.map { m =>
           (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
@@ -311,7 +321,7 @@ object syntax {
       }
     def fetchTupledDedupe[F[_]: Functor, A](
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A], Option[A], Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5)).map { df =>
         df.map { m =>
           (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
@@ -319,13 +329,13 @@ object syntax {
       }
     def fetchTupledLazy[F[_]: Monad, A](implicit
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A], Option[A], Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
       }
     def fetchTupledLazy[F[_]: Monad, A](
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A], Option[A], Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5))
       }
@@ -340,10 +350,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6))
 
     /**
@@ -365,7 +377,7 @@ object syntax {
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { df =>
         df.map { m =>
           (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
@@ -373,7 +385,7 @@ object syntax {
       }
     def fetchTupledDedupe[F[_]: Functor, A](
         fetch: Fetch[F, I, A]
-    ): F[DedupedFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])]] =
+    ): F[DedupedRequest[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { df =>
         df.map { m =>
           (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
@@ -381,13 +393,13 @@ object syntax {
       }
     def fetchTupledLazy[F[_]: Monad, A](implicit
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
       }
     def fetchTupledLazy[F[_]: Monad, A](
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])] =
+    ): LazyRequest[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6)).map { m =>
         (m.get(is._1), m.get(is._2), m.get(is._3), m.get(is._4), m.get(is._5), m.get(is._6))
       }
@@ -402,10 +414,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7))
 
     /**
@@ -442,7 +456,10 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])]
+      DedupedRequest[
+        F,
+        (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
+      ]
     ] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { df =>
         df.map { m =>
@@ -458,7 +475,10 @@ object syntax {
         }
       }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])]
+      DedupedRequest[
+        F,
+        (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
+      ]
     ] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { df =>
         df.map { m =>
@@ -475,7 +495,10 @@ object syntax {
       }
     def fetchTupledLazy[F[_]: Monad, A](implicit
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])] =
+    ): LazyRequest[
+      F,
+      (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
+    ] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { m =>
         (
           m.get(is._1),
@@ -489,7 +512,10 @@ object syntax {
       }
     def fetchTupledLazy[F[_]: Monad, A](
         fetch: Fetch[F, I, A]
-    ): LazyFetch[F, (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])] =
+    ): LazyRequest[
+      F,
+      (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
+    ] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7)).map { m =>
         (
           m.get(is._1),
@@ -512,10 +538,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8))
 
     /**
@@ -554,7 +582,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
       ]
@@ -574,7 +602,7 @@ object syntax {
         }
       }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
       ]
@@ -593,7 +621,7 @@ object syntax {
           )
         }
       }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
     ] =
@@ -609,7 +637,7 @@ object syntax {
           m.get(is._8)
         )
       }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
     ] =
@@ -636,10 +664,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9))
 
     /**
@@ -700,7 +730,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -732,7 +762,7 @@ object syntax {
           }
       }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -763,7 +793,7 @@ object syntax {
             )
           }
       }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -790,7 +820,7 @@ object syntax {
           m.get(is._9)
         )
       }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -828,10 +858,12 @@ object syntax {
     def fetchAllMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[Map[I, A]] =
       fetch.batch(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
 
     /**
@@ -898,7 +930,7 @@ object syntax {
           )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -933,7 +965,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -967,7 +999,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -998,7 +1030,7 @@ object syntax {
             m.get(is._10)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -1042,12 +1074,14 @@ object syntax {
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
       )
@@ -1120,7 +1154,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -1159,7 +1193,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -1197,7 +1231,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -1232,7 +1266,7 @@ object syntax {
             m.get(is._11)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -1280,12 +1314,14 @@ object syntax {
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
       )
@@ -1366,7 +1402,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -1407,7 +1443,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -1447,7 +1483,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -1484,7 +1520,7 @@ object syntax {
             m.get(is._12)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -1548,7 +1584,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -1567,7 +1605,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -1694,7 +1732,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -1751,7 +1789,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -1807,7 +1845,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -1860,7 +1898,7 @@ object syntax {
             m.get(is._13)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -1941,7 +1979,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -1961,7 +2001,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -2095,7 +2135,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -2155,7 +2195,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -2214,7 +2254,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -2270,7 +2310,7 @@ object syntax {
             m.get(is._14)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -2355,7 +2395,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -2376,7 +2418,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -2517,7 +2559,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -2580,7 +2622,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -2642,7 +2684,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -2701,7 +2743,7 @@ object syntax {
             m.get(is._15)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -2790,7 +2832,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -2812,7 +2856,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -2960,7 +3004,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -3026,7 +3070,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -3091,7 +3135,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -3153,7 +3197,7 @@ object syntax {
             m.get(is._16)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -3246,7 +3290,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -3269,7 +3315,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -3424,7 +3470,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -3493,7 +3539,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -3561,7 +3607,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -3626,7 +3672,7 @@ object syntax {
             m.get(is._17)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -3723,7 +3769,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -3747,7 +3795,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -3909,7 +3957,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -3981,7 +4029,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -4052,7 +4100,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -4120,7 +4168,7 @@ object syntax {
             m.get(is._18)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -4223,7 +4271,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -4248,7 +4298,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -4417,7 +4467,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -4492,7 +4542,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -4566,7 +4616,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -4637,7 +4687,7 @@ object syntax {
             m.get(is._19)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -4744,7 +4794,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -4770,7 +4822,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -4946,7 +4998,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -5024,7 +5076,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -5101,7 +5153,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -5175,7 +5227,7 @@ object syntax {
             m.get(is._20)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -5286,7 +5338,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -5313,7 +5367,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -5496,7 +5550,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -5577,7 +5631,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -5657,7 +5711,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -5734,7 +5788,7 @@ object syntax {
             m.get(is._21)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -5849,7 +5903,9 @@ object syntax {
         )
       )
 
-    def fetchAllDedupeMap[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedFetch[F, Map[I, A]]] =
+    def fetchAllDedupeMap[F[_], A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(
         Set(
           is._1,
@@ -5877,7 +5933,7 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyFetch[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -6067,7 +6123,7 @@ object syntax {
         )
       }
     def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -6151,7 +6207,7 @@ object syntax {
           }
         }
     def fetchTupledDedupe[F[_]: Functor, A](fetch: Fetch[F, I, A]): F[
-      DedupedFetch[
+      DedupedRequest[
         F,
         (
             Option[A],
@@ -6234,7 +6290,7 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],
@@ -6314,7 +6370,7 @@ object syntax {
             m.get(is._22)
           )
         }
-    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyFetch[
+    def fetchTupledLazy[F[_]: Monad, A](fetch: Fetch[F, I, A]): LazyRequest[
       F,
       (
           Option[A],

@@ -2,10 +2,10 @@ package fetchless.debug
 
 import fetchless.Fetch
 import cats.effect.Concurrent
-import fetchless.DedupedFetch
-import fetchless.DedupedFetch
+import fetchless.DedupedRequest
+import fetchless.DedupedRequest
 import fetchless.CacheMap
-import fetchless.LazyFetch
+import fetchless.LazyRequest
 import cats.data.Chain
 import cats.syntax.all._
 import cats.effect.Clock
@@ -38,15 +38,15 @@ object DebugFetch {
 
         def single(i: I): F[Option[A]] = updateAndDo(fetch.single(i))(DebugLog.FetchType.Fetch(i))
 
-        def singleDedupe(i: I): F[DedupedFetch[F, Option[A]]] =
+        def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] =
           updateAndDo(fetch.singleDedupe(i))(DebugLog.FetchType.FetchDedupe(i))
 
-        def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedFetch[F, Option[A]]] =
+        def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
           updateAndDo(fetch.singleDedupeCache(i)(cache))(DebugLog.FetchType.FetchDedupe(i))
 
         def singleLazyWrap[B](i: I)(
-            f: F[DedupedFetch[F, Option[A]]] => F[DedupedFetch[F, B]]
-        ): LazyFetch[F, B] =
+            f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
+        ): LazyRequest[F, B] =
           fetch.singleLazyWrap(i) { foa =>
             updateAndDo(f(foa))(DebugLog.FetchType.FetchLazy(i))
           }
@@ -54,15 +54,15 @@ object DebugFetch {
         def batch(iSet: Set[I]): F[Map[I, A]] =
           updateAndDo(fetch.batch(iSet))(DebugLog.FetchType.FetchBatch(iSet))
 
-        def batchDedupe(iSet: Set[I]): F[DedupedFetch[F, Map[I, A]]] =
+        def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] =
           updateAndDo(fetch.batchDedupe(iSet))(DebugLog.FetchType.FetchBatchDedupe(iSet))
 
-        def batchDedupeCache(is: Set[I])(cache: CacheMap): F[DedupedFetch[F, Map[I, A]]] =
+        def batchDedupeCache(is: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
           updateAndDo(fetch.batchDedupeCache(is)(cache))(DebugLog.FetchType.FetchBatchDedupe(is))
 
         def batchLazyWrap[B](iSet: Set[I])(
-            f: F[DedupedFetch[F, Map[I, A]]] => F[DedupedFetch[F, B]]
-        ): LazyFetch[F, B] =
+            f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
+        ): LazyRequest[F, B] =
           fetch.batchLazyWrap(iSet) { fmap =>
             updateAndDo(f(fmap))(DebugLog.FetchType.FetchBatchLazy(iSet))
           }

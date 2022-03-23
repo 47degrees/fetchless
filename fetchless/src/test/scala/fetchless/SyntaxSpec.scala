@@ -60,7 +60,7 @@ class SyntaxSpec extends FunSuite {
       val cache =
         is.toList.map(i => ((i -> "intFetch") -> Some(i))).toMap[(Any, String), Option[Any]]
       val results = toResults(is)
-      DedupedFetch[Id, Map[Int, Int]](cache, results)
+      DedupedRequest[Id, Map[Int, Int]](cache, results)
     }
 
     // fetchAllMap

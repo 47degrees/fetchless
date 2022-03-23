@@ -1,17 +1,12 @@
 package fetchless
 
-import cats.syntax.all._
-import cats.{Applicative, Functor, Traverse}
-import cats.effect.Clock
-import scala.concurrent.duration.FiniteDuration
-import cats.Parallel
-import cats.Monad
-import cats.data.Kleisli
-import cats.ApplicativeError
-import cats.ApplicativeThrow
-import cats.MonadThrow
-import cats.Contravariant
+import cats._
 import cats.arrow.Profunctor
+import cats.effect.Clock
+import cats.data.Kleisli
+import cats.syntax.all._
+import fs2.Stream
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * The ability to fetch values `A` given an ID `I`. Represents a data source such as a database,
@@ -28,21 +23,21 @@ trait Fetch[F[_], I, A] {
   /**
    * Immediately requests a single value alongside a local cache for future fetches to dedupe with.
    */
-  def singleDedupe(i: I): F[DedupedFetch[F, Option[A]]]
+  def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]]
 
   /** Same as `singleDedupe` only you pre-supply the cache. */
-  def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedFetch[F, Option[A]]]
+  def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]]
 
   /**
-   * A version of `singleDedupe` returning a `LazyFetch` instead, which has not been run yet and can
-   * be chained into other requests.
+   * A version of `singleDedupe` returning a `LazyRequest` instead, which has not been run yet and
+   * can be chained into other requests.
    */
-  def singleLazy(i: I): LazyFetch[F, Option[A]] = singleLazyWrap(i)(identity)
+  def singleLazy(i: I): LazyRequest[F, Option[A]] = singleLazyWrap(i)(identity)
 
   /** Same as `singleLazy`, but allows you to modify the effect once ran. */
   def singleLazyWrap[B](i: I)(
-      f: F[DedupedFetch[F, Option[A]]] => F[DedupedFetch[F, B]]
-  ): LazyFetch[F, B]
+      f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
+  ): LazyRequest[F, B]
 
   /** Immediately requests a batch of values. */
   def batch(iSet: Set[I]): F[Map[I, A]]
@@ -55,38 +50,38 @@ trait Fetch[F[_], I, A] {
    * Immediately requests a batch of values alongside a local cache for future fetches to dedupe
    * with.
    */
-  def batchDedupe(iSet: Set[I]): F[DedupedFetch[F, Map[I, A]]]
+  def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]]
 
   /**
    * Immediately requests a batch of values alongside a local cache for future fetches to dedupe
    * with.
    */
-  def batchDedupe[G[_]: Traverse](is: G[I]): F[DedupedFetch[F, Map[I, A]]] =
+  def batchDedupe[G[_]: Traverse](is: G[I]): F[DedupedRequest[F, Map[I, A]]] =
     batchDedupe(is.toIterable.toSet)
 
   /** Same as `batchDedupe` only you pre-supply the cache. */
-  def batchDedupeCache(is: Set[I])(cache: CacheMap): F[DedupedFetch[F, Map[I, A]]]
+  def batchDedupeCache(iSet: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]]
 
   /** Same as `batchDedupe` only you pre-supply the cache. */
-  def batchDedupeCache[G[_]: Traverse](is: G[I])(cache: CacheMap): F[DedupedFetch[F, Map[I, A]]] =
+  def batchDedupeCache[G[_]: Traverse](is: G[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
     batchDedupe(is.toIterable.toSet)
 
   /**
-   * A version of `batchDedupe` returning a `LazyFetch` instead, which has not been run yet and can
-   * be chained into other requests.
+   * A version of `batchDedupe` returning a `LazyRequest` instead, which has not been run yet and
+   * can be chained into other requests.
    */
-  def batchLazy(iSet: Set[I]): LazyFetch[F, Map[I, A]] = batchLazyWrap(iSet)(identity)
+  def batchLazy(iSet: Set[I]): LazyRequest[F, Map[I, A]] = batchLazyWrap(iSet)(identity)
 
   /** Same as `batchLazy`, but allows you to modify the effect once ran. */
   def batchLazyWrap[B](iSet: Set[I])(
-      f: F[DedupedFetch[F, Map[I, A]]] => F[DedupedFetch[F, B]]
-  ): LazyFetch[F, B]
+      f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
+  ): LazyRequest[F, B]
 
   /**
-   * A version of `batchDedupe` returning a `LazyFetch` instead, which has not been run yet and can
-   * be chained into other requests.
+   * A version of `batchDedupe` returning a `LazyRequest` instead, which has not been run yet and
+   * can be chained into other requests.
    */
-  def batchLazy[G[_]: Traverse](is: G[I]): LazyFetch[F, Map[I, A]] =
+  def batchLazy[G[_]: Traverse](is: G[I]): LazyRequest[F, Map[I, A]] =
     batchLazy(is.toIterable.toSet)
 
   /**
@@ -119,41 +114,41 @@ object Fetch {
 
       def single(i: I): F[Option[A]] = fs(i)
 
-      def singleDedupe(i: I): F[DedupedFetch[F, Option[A]]] =
-        single(i).map(oa => DedupedFetch(Map((i -> id) -> oa), oa))
+      def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] =
+        single(i).map(oa => DedupedRequest(Map((i -> id) -> oa), oa))
 
-      def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedFetch[F, Option[A]]] =
+      def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
         cache
           .get(i -> id)
           .pure[F]
           .flatMap {
             case Some(existing) =>
-              DedupedFetch(cache, last = existing.asInstanceOf[Option[A]]).pure[F]
+              DedupedRequest(cache, last = existing.asInstanceOf[Option[A]]).pure[F]
             case None =>
               single(i).map {
-                case Some(a) => DedupedFetch(cache + ((i -> id) -> a.some), a.some)
-                case None    => DedupedFetch(cache + ((i -> id) -> none), none)
+                case Some(a) => DedupedRequest(cache + ((i -> id) -> a.some), a.some)
+                case None    => DedupedRequest(cache + ((i -> id) -> none), none)
               }
           }
 
       def singleLazyWrap[B](i: I)(
-          f: F[DedupedFetch[F, Option[A]]] => F[DedupedFetch[F, B]]
-      ): LazyFetch[F, B] = LazyFetch(
+          f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
+      ): LazyRequest[F, B] = LazyRequest(
         Kleisli(c => f(singleDedupeCache(i)(c)))
       )
 
       def batch(iSet: Set[I]): F[Map[I, A]] = fb(iSet)
 
-      def batchDedupe(iSet: Set[I]): F[DedupedFetch[F, Map[I, A]]] =
+      def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] =
         batch(iSet).map { resultMap =>
           val missing = iSet.diff(resultMap.keySet)
           val initialCache: CacheMap =
             resultMap.view.map[(I, String), Option[A]] { case (i, a) => (i -> id) -> a.some }.toMap
           val missingCache: CacheMap = missing.toList.map(i => (i -> id) -> none[A]).toMap
-          DedupedFetch(initialCache ++ missingCache, resultMap)
+          DedupedRequest(initialCache ++ missingCache, resultMap)
         }
 
-      def batchDedupeCache(is: Set[I])(cache: CacheMap): F[DedupedFetch[F, Map[I, A]]] = {
+      def batchDedupeCache(is: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] = {
         val (needed, existing) = is.foldLeft(Set.empty[I], Map.empty[I, A]) {
           case ((iSet, cached), i) =>
             cache.get(i, id) match {
@@ -164,13 +159,13 @@ object Fetch {
         batch(needed).map { resultMap =>
           val newlyCacheable = resultMap.view.map { case (i, a) => (i -> id) -> a.some }.toMap
           val missing        = needed.diff(resultMap.keySet).toList.map(i => (i -> id) -> none)
-          DedupedFetch(cache ++ newlyCacheable ++ missing, resultMap)
+          DedupedRequest(cache ++ newlyCacheable ++ missing, resultMap)
         }
       }
 
       def batchLazyWrap[B](iSet: Set[I])(
-          f: F[DedupedFetch[F, Map[I, A]]] => F[DedupedFetch[F, B]]
-      ): LazyFetch[F, B] = LazyFetch(
+          f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
+      ): LazyRequest[F, B] = LazyRequest(
         Kleisli(c => f(batchDedupeCache(iSet)(c)))
       )
     }
@@ -234,9 +229,9 @@ object Fetch {
    * output value type (`rmap`) without having to manually do the wrapping yourself.
    *
    * Note that efficiency when using `lmap` or `dimap` might be an issue since those cases need to
-   * create intermediary data structures to determine which input IDs match to which output IDs. It
-   * might be faster in some cases to just create your own optimized `Fetch` instance if you are
-   * planning on mapping the input type.
+   * determine which input IDs match to which output IDs, so extra operations and allocations are
+   * necessary. It might be faster in some cases to just create a new, optimized `Fetch` instance if
+   * you are planning on mapping the input type.
    */
   implicit def fetchProfunctor[F[_]: Monad]: Profunctor[Fetch[F, *, *]] =
     new Profunctor[Fetch[F, *, *]] {
