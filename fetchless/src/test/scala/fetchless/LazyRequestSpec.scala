@@ -11,7 +11,7 @@ import cats.effect.kernel.Ref
 import munit.CatsEffectSuite
 import cats.effect.Clock
 
-class LazySpec extends CatsEffectSuite {
+class LazyRequestSpec extends CatsEffectSuite {
 
   test("LazyRequest allows for non-linear deduping") {
     def intFetch(countRef: Ref[IO, Int], logRef: Ref[IO, List[Int]]) =
@@ -44,12 +44,13 @@ class LazySpec extends CatsEffectSuite {
   }
 
   test("Has a parallel instance with LazyBatchRequest") {
-    implicit val intFetch = Fetch.singleSequenced[Id, Int, Int]("intFetch") { i =>
-      Some(i)
-    }
+    var timesBatchCalled = 0
 
-    implicit val boolFetch = Fetch.singleSequenced[Id, Boolean, Boolean]("boolFetch") { i =>
+    implicit val intFetch = Fetch.batchable[Id, Int, Int]("intFetch") { i =>
       Some(i)
+    } { is =>
+      timesBatchCalled += 1
+      is.toList.map(i => i -> i).toMap
     }
 
     val results =
@@ -71,5 +72,6 @@ class LazySpec extends CatsEffectSuite {
         List(Some(1), Some(2), Some(3))
       )
     )
+    assertEquals(timesBatchCalled, 1)
   }
 }
