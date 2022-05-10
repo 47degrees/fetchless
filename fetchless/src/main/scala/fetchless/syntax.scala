@@ -4,6 +4,7 @@ import cats.{FlatMap, Functor, Traverse}
 import cats.syntax.all._
 import cats.Monad
 import cats.data.Kleisli
+import cats.Applicative
 
 object syntax {
 
@@ -35,7 +36,7 @@ object syntax {
     def fetch[F[_], A](implicit fetch: Fetch[F, I, A]): F[Option[A]] = fetch.single(i)
     def fetchDedupe[F[_], A](implicit fetch: Fetch[F, I, A]): F[DedupedRequest[F, Option[A]]] =
       fetch.singleDedupe(i)
-    def fetchLazy[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Option[A]] =
+    def fetchLazy[F[_]: Applicative, A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Option[A]] =
       fetch.singleLazy(i)
   }
 
@@ -50,8 +51,8 @@ object syntax {
   }
 
   implicit class EffectfulSyntaxMonad[F[_]: Monad, I](fi: F[I]) {
-    def fetchLazy[A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Option[A]] =
-      LazyRequest.liftF(fi).flatMap(i => fetch.singleLazy(i))
+    def fetchLazy[A](id: Any)(implicit fetch: Fetch[F, I, A]): LazyRequest[F, Option[A]] =
+      LazyRequest.liftF(fi)(id).flatMap(i => fetch.singleLazy(i))
   }
 
   implicit class TraverseBatchSyntax[G[_]: Traverse, I](is: G[I]) {
@@ -88,17 +89,19 @@ object syntax {
         fetch: Fetch[F, I, A]
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(is)
-    def fetchAllLazy[F[_]: Functor, A](implicit
+    def fetchAllLazy[F[_]: Applicative, A](implicit
         fetch: Fetch[F, I, A]
     ): LazyRequest[F, G[Option[A]]] = fetchAllLazyMap[F, A].map { m =>
       is.map(i => m.get(i))
     }
-    def fetchAllLazy[F[_]: Functor, A](
+    def fetchAllLazy[F[_]: Applicative, A](
         fetch: Fetch[F, I, A]
-    ): LazyRequest[F, G[Option[A]]] = fetchAllLazyMap[F, A](fetch).map { m =>
+    ): LazyRequest[F, G[Option[A]]] = fetchAllLazyMap[F, A](implicitly, fetch).map { m =>
       is.map(i => m.get(i))
     }
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(is)
   }
 
@@ -116,7 +119,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2))
 
     /**
@@ -171,7 +176,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3))
 
     /**
@@ -228,7 +235,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4))
 
     /**
@@ -291,7 +300,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5))
 
     /**
@@ -355,7 +366,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6))
 
     /**
@@ -419,7 +432,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7))
 
     /**
@@ -543,7 +558,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8))
 
     /**
@@ -669,7 +686,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9))
 
     /**
@@ -863,7 +882,9 @@ object syntax {
     ): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupe(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10))
 
     /**
@@ -1081,7 +1102,9 @@ object syntax {
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11)
       )
@@ -1321,7 +1344,9 @@ object syntax {
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(is._1, is._2, is._3, is._4, is._5, is._6, is._7, is._8, is._9, is._10, is._11, is._12)
       )
@@ -1605,7 +1630,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -2001,7 +2028,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -2418,7 +2447,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -2856,7 +2887,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -3315,7 +3348,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -3795,7 +3830,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -4298,7 +4335,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -4822,7 +4861,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -5367,7 +5408,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
@@ -5933,7 +5976,9 @@ object syntax {
         )
       )
 
-    def fetchAllLazyMap[F[_], A](implicit fetch: Fetch[F, I, A]): LazyRequest[F, Map[I, A]] =
+    def fetchAllLazyMap[F[_]: Applicative, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Map[I, A]] =
       fetch.batchLazy(
         Set(
           is._1,
