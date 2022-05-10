@@ -1,7 +1,6 @@
 package fetchless
 
-import fetchless.CacheMap
-import cats.Monad
+import cats.{Applicative, Monad}
 import cats.syntax.all._
 import cats.data.Kleisli
 
@@ -30,14 +29,14 @@ trait AllFetch[F[_], I, A] extends Fetch[F, I, A] {
    * this step as all elements are requested explicitly, but any other unrelated cached results are
    * kept.
    */
-  def batchAllDedupeCache(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]]
+  def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]]
 
   /**
    * A lazy request for all elements from this `Fetch`. Like `batchAllDedupe` it will ignore the
    * existing cache for the request but it will keep the current state of the cache when chaining
    * requests.
    */
-  def batchAllLazy: LazyRequest[F, Map[I, A]]
+  def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]]
 }
 
 object AllFetch {
@@ -59,45 +58,57 @@ object AllFetch {
 
       def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
 
-      def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
+      def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         fetch.singleDedupeCache(i)(cache)
-
-      def singleLazyWrap[B](i: I)(
-          f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
-      ): LazyRequest[F, B] = fetch.singleLazyWrap(i)(f)
 
       def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
       def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
-      def batchDedupeCache(iSet: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+      def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchDedupeCache(iSet)(cache)
-
-      def batchLazyWrap[B](iSet: Set[I])(
-          f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
-      ): LazyRequest[F, B] = fetch.batchLazyWrap(iSet)(f)
 
       def batchAll: F[Map[I, A]] = doBatchAll
 
       def batchAllDedupe: F[DedupedRequest[F, Map[I, A]]] = batchAll.map { m =>
-        val cacheMap =
-          m.toList.map { case (i, a) => (i -> fetch.id) -> a.some }.toMap.asInstanceOf[CacheMap]
-        DedupedRequest(cacheMap, m)
+        val fetchCache =
+          FetchCache(
+            m.toList.map { case (i, a) => (i -> fetch.wrappedId) -> a.some }.toMap,
+            Set(fetch.wrappedId)
+          )
+        DedupedRequest(fetchCache, m)
       }
 
-      def batchAllDedupeCache(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] = batchAll.map {
+      def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] = batchAll.map {
         m =>
-          val cacheMap =
-            cache ++ m.toList
-              .map { case (i, a) => (i -> fetch.id) -> a.some }
-              .toMap
-              .asInstanceOf[CacheMap]
-          DedupedRequest(cacheMap, m)
+          val fetchCache =
+            cache ++ FetchCache(
+              m.toList.map { case (i, a) => (i -> fetch.wrappedId) -> a.some }.toMap,
+              Set(fetch.wrappedId)
+            )
+          DedupedRequest(fetchCache, m)
       }
 
-      def batchAllLazy: LazyRequest[F, Map[I, A]] = LazyRequest(Kleisli { c =>
-        batchAllDedupeCache(c)
-      })
+      def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
+        Kleisli { c =>
+          LazyRequest.ReqInfo
+            .fetchAll(
+              c,
+              wrappedId,
+              batchAllDedupeCache(c).asInstanceOf[F[
+                DedupedRequest[F, Any]
+              ]],
+              Kleisli[F, FetchCache, DedupedRequest[F, Map[I, A]]] { fetchCache =>
+                DedupedRequest(
+                  fetchCache,
+                  fetchCache.getMap(this)
+                )
+                  .pure[F]
+              }
+            )
+            .pure[F]
+        }
+      )
 
     }
 }

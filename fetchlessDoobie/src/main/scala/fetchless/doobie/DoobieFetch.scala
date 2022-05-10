@@ -1,17 +1,14 @@
 package fetchless.doobie
 
-import doobie.Query
-import doobie.Query0
-import doobie.ConnectionIO
-import fetchless.Fetch
+import cats.Parallel
+import cats.effect.MonadCancelThrow
+import doobie.{ConnectionIO, Query, Query0}
 import doobie.implicits._
 import doobie.util.query
 import doobie.util.transactor.Transactor
-import cats.effect.MonadCancelThrow
-import cats.Parallel
-import fetchless.streaming.StreamingFetch
+import fetchless.Fetch
+import fetchless.streaming.{StreamingAllFetch, StreamingFetch}
 import fs2.Stream
-import fetchless.streaming.StreamingAllFetch
 
 object DoobieFetch {
 

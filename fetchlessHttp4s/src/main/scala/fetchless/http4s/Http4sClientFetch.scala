@@ -1,13 +1,11 @@
 package fetchless.http4s
 
-import fetchless.Fetch
-import cats.{Monad, Parallel}
-import org.http4s.{EntityDecoder, Request}
-import org.http4s.client.Client
-import cats.MonadThrow
+import cats.{Monad, MonadThrow, Parallel}
 import cats.syntax.all._
 import fetchless.streaming.StreamingFetch
-import fetchless.AllFetch
+import fetchless.{AllFetch, Fetch}
+import org.http4s.{EntityDecoder, Request}
+import org.http4s.client.Client
 
 /** Constructors for `Fetch` instances based on http4s HTTP clients. */
 object Http4sClientFetch {

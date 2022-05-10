@@ -1,16 +1,10 @@
 package fetchless.streaming
 
-import cats.syntax.all._
-import fetchless.Fetch
-import fs2.Stream
-import fetchless.DedupedRequest
-import fetchless.DedupedRequest
-import fetchless.CacheMap
-import fetchless.{DedupedRequest, LazyRequest}
-import fetchless.LazyBatchRequest
-import fetchless.CacheMap
 import cats.Functor
 import cats.data.Kleisli
+import cats.syntax.all._
+import fetchless._
+import fs2.Stream
 
 trait StreamingFetch[F[_], I, A] extends Fetch[F, I, A] { self =>
 
@@ -51,23 +45,15 @@ object StreamingFetch {
 
     def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
 
-    def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
+    def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
       fetch.singleDedupeCache(i)(cache)
-
-    def singleLazyWrap[B](i: I)(
-        f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
-    ): LazyRequest[F, B] = fetch.singleLazyWrap(i)(f)
 
     def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
     def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
-    def batchDedupeCache(iSet: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+    def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupeCache(iSet)(cache)
-
-    def batchLazyWrap[B](iSet: Set[I])(
-        f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
-    ): LazyRequest[F, B] = fetch.batchLazyWrap(iSet)(f)
 
     def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] =
       doStreamingBatch(iSet)
@@ -92,23 +78,15 @@ object StreamingFetch {
 
     def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
 
-    def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
+    def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
       fetch.singleDedupeCache(i)(cache)
-
-    def singleLazyWrap[B](i: I)(
-        f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
-    ): LazyRequest[F, B] = fetch.singleLazyWrap(i)(f)
 
     def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
     def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
-    def batchDedupeCache(iSet: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+    def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupeCache(iSet)(cache)
-
-    def batchLazyWrap[B](iSet: Set[I])(
-        f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
-    ): LazyRequest[F, B] = fetch.batchLazyWrap(iSet)(f)
 
     override def streamingBatchFilterOption(iSet: Set[I]): Stream[F, (I, A)] =
       doStreamingBatchGuaranteed(iSet)
@@ -144,23 +122,15 @@ object StreamingFetch {
 
     def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
 
-    def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
+    def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
       fetch.singleDedupeCache(i)(cache)
-
-    def singleLazyWrap[B](i: I)(
-        f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
-    ): LazyRequest[F, B] = fetch.singleLazyWrap(i)(f)
 
     def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
     def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
-    def batchDedupeCache(iSet: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+    def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupeCache(iSet)(cache)
-
-    def batchLazyWrap[B](iSet: Set[I])(
-        f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
-    ): LazyRequest[F, B] = fetch.batchLazyWrap(iSet)(f)
 
     def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] =
       Stream.eval(batch(iSet)).flatMap(m => Stream.iterable(iSet).map(i => i -> m.get(i)))

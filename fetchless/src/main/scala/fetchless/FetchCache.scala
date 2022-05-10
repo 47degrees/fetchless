@@ -3,7 +3,7 @@ package fetchless
 import cats.data.Kleisli
 import FetchCache.CacheMap
 
-final case class FetchCache(cacheMap: CacheMap, fetchAllAcc: Set[FetchId]) {
+final case class FetchCache(cacheMap: CacheMap, fetchAllAcc: Set[FetchId.StringId]) {
   def +(kv: ((Any, FetchId), Option[Any])): FetchCache = copy(cacheMap = cacheMap + kv)
   def ++(c: FetchCache): FetchCache =
     FetchCache(cacheMap ++ c.cacheMap, fetchAllAcc ++ c.fetchAllAcc)
@@ -20,7 +20,7 @@ final case class FetchCache(cacheMap: CacheMap, fetchAllAcc: Set[FetchId]) {
       i.asInstanceOf[I] -> b.asInstanceOf[A]
   }
 
-  def setFetchAllFor(id: FetchId): FetchCache = copy(fetchAllAcc = fetchAllAcc + id)
+  def setFetchAllFor(id: FetchId.StringId): FetchCache = copy(fetchAllAcc = fetchAllAcc + id)
 }
 
 object FetchCache {

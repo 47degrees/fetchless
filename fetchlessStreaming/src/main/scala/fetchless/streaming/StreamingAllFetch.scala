@@ -1,11 +1,10 @@
 package fetchless.streaming
 
-import fs2.Stream
-import cats.Functor
-import fetchless._
-import fetchless.CacheMap
+import cats.{Applicative, Functor}
 import cats.data.Kleisli
 import cats.syntax.all._
+import fetchless._
+import fs2.Stream
 
 trait StreamingAllFetch[F[_], I, A] extends StreamingFetch[F, I, A] with AllFetch[F, I, A] {
 
@@ -35,23 +34,15 @@ object StreamingAllFetch {
 
       def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
 
-      def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
+      def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         fetch.singleDedupeCache(i)(cache)
-
-      def singleLazyWrap[B](i: I)(
-          f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
-      ): LazyRequest[F, B] = fetch.singleLazyWrap(i)(f)
 
       def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
       def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
-      def batchDedupeCache(iSet: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+      def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchDedupeCache(iSet)(cache)
-
-      def batchLazyWrap[B](iSet: Set[I])(
-          f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
-      ): LazyRequest[F, B] = fetch.batchLazyWrap(iSet)(f)
 
       def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] =
         doStreamingBatch(iSet)
@@ -63,11 +54,20 @@ object StreamingAllFetch {
 
       def batchAllDedupe: F[DedupedRequest[F, Map[I, A]]] = fetch.batchAllDedupe
 
-      def batchAllDedupeCache(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+      def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchAllDedupeCache(cache)
 
-      def batchAllLazy: LazyRequest[F, Map[I, A]] = LazyRequest(
-        Kleisli(c => batchAllDedupeCache(c))
+      def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
+        Kleisli(c =>
+          LazyRequest.ReqInfo
+            .fetchAll[F, Map[I, A]](
+              c,
+              fetch.wrappedId,
+              batchAllDedupeCache(c).asInstanceOf[F[DedupedRequest[F, Any]]],
+              Kleisli(c2 => DedupedRequest[F, Map[I, A]](c2, c2.getMap(fetch)).pure[F])
+            )
+            .pure[F]
+        )
       )
 
       def streamAll: Stream[F, (I, A)] = doStreamAll
@@ -93,23 +93,15 @@ object StreamingAllFetch {
 
       def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
 
-      def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
+      def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         fetch.singleDedupeCache(i)(cache)
-
-      def singleLazyWrap[B](i: I)(
-          f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
-      ): LazyRequest[F, B] = fetch.singleLazyWrap(i)(f)
 
       def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
       def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
-      def batchDedupeCache(iSet: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+      def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchDedupeCache(iSet)(cache)
-
-      def batchLazyWrap[B](iSet: Set[I])(
-          f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
-      ): LazyRequest[F, B] = fetch.batchLazyWrap(iSet)(f)
 
       def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] =
         Stream.eval(batch(iSet)).flatMap(m => Stream.iterable(iSet).map(i => i -> m.get(i)))
@@ -121,11 +113,20 @@ object StreamingAllFetch {
 
       def batchAllDedupe: F[DedupedRequest[F, Map[I, A]]] = fetch.batchAllDedupe
 
-      def batchAllDedupeCache(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+      def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchAllDedupeCache(cache)
 
-      def batchAllLazy: LazyRequest[F, Map[I, A]] = LazyRequest(
-        Kleisli(c => batchAllDedupeCache(c))
+      def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
+        Kleisli { c =>
+          LazyRequest.ReqInfo
+            .fetchAll(
+              c,
+              fetch.wrappedId,
+              batchAllDedupeCache(c).asInstanceOf[F[DedupedRequest[F, Any]]],
+              Kleisli(c2 => DedupedRequest[F, Map[I, A]](c2, c2.getMap(fetch)).pure[F])
+            )
+            .pure[F]
+        }
       )
 
       def streamAll: Stream[F, (I, A)] = Stream.eval(batchAll).flatMap(m => Stream.iterable(m))
@@ -146,23 +147,15 @@ object StreamingAllFetch {
 
       def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
 
-      def singleDedupeCache(i: I)(cache: CacheMap): F[DedupedRequest[F, Option[A]]] =
+      def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         fetch.singleDedupeCache(i)(cache)
-
-      def singleLazyWrap[B](i: I)(
-          f: F[DedupedRequest[F, Option[A]]] => F[DedupedRequest[F, B]]
-      ): LazyRequest[F, B] = fetch.singleLazyWrap(i)(f)
 
       def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
       def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
-      def batchDedupeCache(iSet: Set[I])(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] =
+      def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchDedupeCache(iSet)(cache)
-
-      def batchLazyWrap[B](iSet: Set[I])(
-          f: F[DedupedRequest[F, Map[I, A]]] => F[DedupedRequest[F, B]]
-      ): LazyRequest[F, B] = fetch.batchLazyWrap(iSet)(f)
 
       def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] = fetch.streamingBatch(iSet)
 
@@ -171,25 +164,37 @@ object StreamingAllFetch {
       def batchAllDedupe: F[DedupedRequest[F, Map[I, A]]] =
         batchAll.map(m =>
           DedupedRequest(
-            m.toList.map { case (i, a) => (i -> fetch.id) -> a.some }.toMap.asInstanceOf[CacheMap],
+            m.toList
+              .map { case (i, a) => (i -> fetch.id) -> a.some }
+              .toMap
+              .asInstanceOf[FetchCache],
             m
           )
         )
 
-      def batchAllDedupeCache(cache: CacheMap): F[DedupedRequest[F, Map[I, A]]] = batchAll.map {
+      def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] = batchAll.map {
         m =>
           val cacheMap = cache ++ m.toList
             .map { case (i, a) => (i -> fetch.id) -> a.some }
             .toMap
-            .asInstanceOf[CacheMap]
+            .asInstanceOf[FetchCache]
           DedupedRequest(
             cacheMap,
             m
           )
       }
 
-      def batchAllLazy: LazyRequest[F, Map[I, A]] = LazyRequest(
-        Kleisli(c => batchAllDedupeCache(c))
+      def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
+        Kleisli { c =>
+          LazyRequest.ReqInfo
+            .fetchAll(
+              c,
+              fetch.wrappedId,
+              batchAllDedupeCache(c).asInstanceOf[F[DedupedRequest[F, Any]]],
+              Kleisli(c2 => DedupedRequest[F, Map[I, A]](c2, c2.getMap(fetch)).pure[F])
+            )
+            .pure[F]
+        }
       )
 
       def streamAll: Stream[F, (I, A)] = doStreamAll

@@ -18,7 +18,10 @@ import cats.Functor
  * @param last
  *   The last value retrieved in sequence.
  */
-final case class DedupedRequest[F[_], A](unsafeCache: CacheMap, last: A) {
+final case class DedupedRequest[F[_], A](
+    unsafeCache: FetchCache,
+    last: A
+) {
 
   /** Fetch another value using this cache as a base. */
   def alsoFetch[I, B](
@@ -45,23 +48,23 @@ final case class DedupedRequest[F[_], A](unsafeCache: CacheMap, last: A) {
    * both fetches.
    */
   def absorb[B](df: DedupedRequest[F, B]): DedupedRequest[F, B] =
-    df.copy(unsafeCache = unsafeCache ++ df.unsafeCache)
+    df.copy(
+      unsafeCache = unsafeCache ++ df.unsafeCache
+    )
 
   /**
    * Filter the deduped cache results by the selected `Fetch` instance. If any results exist for the
    * instance supplied, they will be presented in a new map.
    */
-  def access[I, B](implicit fetch: Fetch[F, I, B]) = unsafeCache.collect[I, B] {
-    case ((i, fid), Some(b)) if (fid == fetch.id) =>
-      i.asInstanceOf[I] -> b.asInstanceOf[B]
-  }
+  def access[I, B](implicit fetch: Fetch[F, I, B]) = unsafeCache.getMap(fetch)
 }
 
 object DedupedRequest {
 
-  def prepopulated[F[_]](cache: CacheMap): DedupedRequest[F, Unit] = DedupedRequest(cache, ())
+  def prepopulated[F[_]](cache: FetchCache): DedupedRequest[F, Unit] =
+    DedupedRequest(cache, ())
 
-  def empty[F[_]]: DedupedRequest[F, Unit] = prepopulated(Map.empty)
+  def empty[F[_]]: DedupedRequest[F, Unit] = prepopulated(FetchCache.empty)
 
   /** `cats.Monad` instance for `DedupedRequest` */
   implicit def dedupedRequestM[F[_]: Monad]: Monad[DedupedRequest[F, *]] =
@@ -79,7 +82,7 @@ object DedupedRequest {
         }
       }
 
-      def pure[A](x: A): DedupedRequest[F, A] = DedupedRequest(Map.empty, x)
+      def pure[A](x: A): DedupedRequest[F, A] = DedupedRequest(FetchCache.empty, x)
 
     }
 
@@ -88,7 +91,7 @@ object DedupedRequest {
       def ap[A, B](ff: DedupedRequest[F, A => B])(fa: DedupedRequest[F, A]): DedupedRequest[F, B] =
         ff.absorb(fa.copy(last = ff.last(fa.last)))
 
-      def pure[A](x: A): DedupedRequest[F, A] = DedupedRequest[F, A](Map.empty, x)
+      def pure[A](x: A): DedupedRequest[F, A] = DedupedRequest[F, A](FetchCache.empty, x)
 
     }
 
