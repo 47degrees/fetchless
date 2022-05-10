@@ -58,7 +58,10 @@ class SyntaxSpec extends FunSuite {
 
     def toDF(is: Set[Any]) = {
       val cache =
-        is.toList.map(i => ((i -> "intFetch") -> Some(i))).toMap[(Any, String), Option[Any]]
+        FetchCache(
+          is.toList.map(i => ((i -> dummyFetch.wrappedId) -> Some(i))).toMap,
+          Set.empty
+        )
       val results = toResults(is)
       DedupedRequest[Id, Map[Int, Int]](cache, results)
     }
@@ -206,73 +209,88 @@ class SyntaxSpec extends FunSuite {
     )
 
     // fetchAllLazyMap
-    assertEquals(two.fetchAllLazyMap(dummyFetch).run, toDF(two.productIterator.toSet))
-    assertEquals(three.fetchAllLazyMap(dummyFetch).run, toDF(three.productIterator.toSet))
-    assertEquals(four.fetchAllLazyMap(dummyFetch).run, toDF(four.productIterator.toSet))
-    assertEquals(five.fetchAllLazyMap(dummyFetch).run, toDF(five.productIterator.toSet))
-    assertEquals(six.fetchAllLazyMap(dummyFetch).run, toDF(six.productIterator.toSet))
     assertEquals(
-      seven.fetchAllLazyMap(dummyFetch).run,
+      two.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
+      toDF(two.productIterator.toSet)
+    )
+    assertEquals(
+      three.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
+      toDF(three.productIterator.toSet)
+    )
+    assertEquals(
+      four.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
+      toDF(four.productIterator.toSet)
+    )
+    assertEquals(
+      five.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
+      toDF(five.productIterator.toSet)
+    )
+    assertEquals(
+      six.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
+      toDF(six.productIterator.toSet)
+    )
+    assertEquals(
+      seven.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(seven.productIterator.toSet)
     )
     assertEquals(
-      eight.fetchAllLazyMap(dummyFetch).run,
+      eight.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(eight.productIterator.toSet)
     )
     assertEquals(
-      nine.fetchAllLazyMap(dummyFetch).run,
+      nine.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(nine.productIterator.toSet)
     )
     assertEquals(
-      ten.fetchAllLazyMap(dummyFetch).run,
+      ten.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(ten.productIterator.toSet)
     )
     assertEquals(
-      eleven.fetchAllLazyMap(dummyFetch).run,
+      eleven.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(eleven.productIterator.toSet)
     )
     assertEquals(
-      twelve.fetchAllLazyMap(dummyFetch).run,
+      twelve.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(twelve.productIterator.toSet)
     )
     assertEquals(
-      thirteen.fetchAllLazyMap(dummyFetch).run,
+      thirteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(thirteen.productIterator.toSet)
     )
     assertEquals(
-      fourteen.fetchAllLazyMap(dummyFetch).run,
+      fourteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(fourteen.productIterator.toSet)
     )
     assertEquals(
-      fifteen.fetchAllLazyMap(dummyFetch).run,
+      fifteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(fifteen.productIterator.toSet)
     )
     assertEquals(
-      sixteen.fetchAllLazyMap(dummyFetch).run,
+      sixteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(sixteen.productIterator.toSet)
     )
     assertEquals(
-      seventeen.fetchAllLazyMap(dummyFetch).run,
+      seventeen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(seventeen.productIterator.toSet)
     )
     assertEquals(
-      eighteen.fetchAllLazyMap(dummyFetch).run,
+      eighteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(eighteen.productIterator.toSet)
     )
     assertEquals(
-      nineteen.fetchAllLazyMap(dummyFetch).run,
+      nineteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(nineteen.productIterator.toSet)
     )
     assertEquals(
-      twenty.fetchAllLazyMap(dummyFetch).run,
+      twenty.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(twenty.productIterator.toSet)
     )
     assertEquals(
-      twentyOne.fetchAllLazyMap(dummyFetch).run,
+      twentyOne.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(twentyOne.productIterator.toSet)
     )
     assertEquals(
-      twentyTwo.fetchAllLazyMap(dummyFetch).run,
+      twentyTwo.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(twentyTwo.productIterator.toSet)
     )
 

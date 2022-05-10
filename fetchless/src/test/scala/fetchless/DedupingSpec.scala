@@ -8,19 +8,24 @@ import munit.FunSuite
 
 class DedupingSpec extends FunSuite {
 
-  val exampleKey = ("1" -> "str")
+  val exampleKey = ("1" -> FetchId.StringId("str"))
 
   test("DedupedRequest absorb") {
-    val dedupeA = DedupedRequest(Map(exampleKey -> 1.some), none[Int])
-    val dedupeB = DedupedRequest(Map(exampleKey -> none[Int]), none[Int])
+    val dedupeA = DedupedRequest(FetchCache(Map(exampleKey -> 1.some), Set.empty), none[Int])
+    val dedupeB = DedupedRequest(FetchCache(Map(exampleKey -> none[Int]), Set.empty), none[Int])
 
-    assert(dedupeA.absorb(dedupeB).unsafeCache == Map(exampleKey -> none[Int]))
+    assertEquals(
+      dedupeA.absorb(dedupeB).unsafeCache.cacheMap,
+      Map(exampleKey -> none[Int]).asInstanceOf[FetchCache.CacheMap]
+    )
   }
 
   test("DedupedRequest flatMap") {
-    val key2    = ("2" -> "str")
-    val dedupeA = DedupedRequest[Id, Option[Int]](Map(exampleKey -> 1.some), 4.some)
-    val dedupeB = DedupedRequest[Id, Option[Int]](Map(key2 -> 2.some), 5.some)
+    val key2 = ("2" -> FetchId.StringId("str"))
+    val dedupeA =
+      DedupedRequest[Id, Option[Int]](FetchCache(Map(exampleKey -> 1.some), Set.empty), 4.some)
+    val dedupeB =
+      DedupedRequest[Id, Option[Int]](FetchCache(Map(key2 -> 2.some), Set.empty), 5.some)
 
     val result = dedupeA.flatMap {
       case None    => dedupeB
@@ -28,9 +33,12 @@ class DedupingSpec extends FunSuite {
     }
 
     val expected = DedupedRequest[Id, Option[Int]](
-      Map(
-        exampleKey -> 1.some,
-        key2       -> 2.some
+      FetchCache(
+        Map(
+          exampleKey -> 1.some,
+          key2       -> 2.some
+        ),
+        Set.empty
       ),
       4.some
     )
@@ -57,12 +65,13 @@ class DedupingSpec extends FunSuite {
       .alsoFetch[Boolean, Boolean](true)
       .alsoFetch[Int, Int](6)
 
-    assert(
-      result.unsafeCache == Map(
-        (5    -> "intFetch")  -> 5.some,
-        (6    -> "intFetch")  -> 6.some,
-        (true -> "boolFetch") -> true.some
-      )
+    assertEquals(
+      result.unsafeCache.cacheMap,
+      Map(
+        (5    -> FetchId.StringId("intFetch"))  -> 5.some,
+        (6    -> FetchId.StringId("intFetch"))  -> 6.some,
+        (true -> FetchId.StringId("boolFetch")) -> true.some
+      ).asInstanceOf[FetchCache.CacheMap]
     )
 
     assertEquals(result.last, 6.some)
