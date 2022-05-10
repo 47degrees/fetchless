@@ -169,4 +169,66 @@ class LazyRequestSpec extends CatsEffectSuite {
 
     checkResult >> checkCounter
   }
+
+  test("Dedupes AllFetch requests (linear)") {
+    var counter = 0
+
+    val boolFetch = AllFetch.fromExisting(Fetch.echo[IO, Boolean]("boolFetch"))(IO {
+      counter = counter + 1
+      Map(true -> true, false -> false)
+    })
+
+    val results =
+      List(boolFetch.batchAllLazy, boolFetch.batchAllLazy, boolFetch.batchAllLazy).sequence.run
+
+    val expectedMap = Map(true -> true, false -> false)
+
+    val checkResult = results.assertEquals(
+      DedupedRequest[IO, List[Map[Boolean, Boolean]]](
+        FetchCache(
+          Map(
+            (true, FetchId.StringId("boolFetch")) -> Some(true),
+            (false                                -> FetchId.StringId("boolFetch")) -> Some(false)
+          ),
+          Set(boolFetch.wrappedId)
+        ),
+        List(expectedMap, expectedMap, expectedMap)
+      )
+    )
+
+    val checkCounter = IO(assertEquals(counter, 1))
+
+    checkResult >> checkCounter
+  }
+
+  test("Dedupes AllFetch requests (parallel)".only) {
+    var counter = 0
+
+    val boolFetch = AllFetch.fromExisting(Fetch.echo[IO, Boolean]("boolFetch"))(IO {
+      counter = counter + 1
+      Map(true -> true, false -> false)
+    })
+
+    val results =
+      List(boolFetch.batchAllLazy, boolFetch.batchAllLazy, boolFetch.batchAllLazy).parSequence.run
+
+    val expectedMap = Map(true -> true, false -> false)
+
+    val checkResult = results.assertEquals(
+      DedupedRequest[IO, List[Map[Boolean, Boolean]]](
+        FetchCache(
+          Map(
+            (true, FetchId.StringId("boolFetch")) -> Some(true),
+            (false                                -> FetchId.StringId("boolFetch")) -> Some(false)
+          ),
+          Set(boolFetch.wrappedId)
+        ),
+        List(expectedMap, expectedMap, expectedMap)
+      )
+    )
+
+    val checkCounter = IO(assertEquals(counter, 1))
+
+    checkResult >> checkCounter
+  }
 }
