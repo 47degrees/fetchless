@@ -15,7 +15,7 @@ object ProjectPlugin extends AutoPlugin {
       Seq(
         libraryDependencies ++=
           Seq(
-            "org.typelevel" %%% "cats-effect"         % "3.3.4",
+            "org.typelevel" %%% "cats-effect"         % "3.3.11",
             "co.fs2"         %% "fs2-core"            % "3.2.5",
             "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7" % "test"
           )
@@ -39,7 +39,7 @@ object ProjectPlugin extends AutoPlugin {
       Seq(
         libraryDependencies ++=
           Seq(
-            "org.http4s" %%% "http4s-client" % "1.0.0-M31"
+            "org.http4s" %%% "http4s-client" % "1.0.0-M32"
           )
       )
 
@@ -47,7 +47,7 @@ object ProjectPlugin extends AutoPlugin {
       Seq(
         libraryDependencies ++=
           Seq(
-            "org.http4s" %%% "http4s-client" % "0.23.10"
+            "org.http4s" %%% "http4s-client" % "0.23.11"
           )
       )
 
