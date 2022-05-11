@@ -62,12 +62,18 @@ object AllFetch {
       def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         fetch.singleDedupeCache(i)(cache)
 
+      def singleLazy(i: I): LazyRequest[F, Option[A]] =
+        fetch.singleLazy(i)
+
       def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
       def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
       def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchDedupeCache(iSet)(cache)
+
+      def batchLazy(iSet: Set[I]): fetchless.LazyRequest[F, Map[I, A]] =
+        fetch.batchLazy(iSet)
 
       def batchAll: F[Map[I, A]] = doBatchAll
 
