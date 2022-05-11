@@ -30,16 +30,14 @@ trait AllFetch[F[_], I, A] extends Fetch[F, I, A] {
    * see that all possible values have been cached, and no requests will be made for values related
    * to this `Fetch` instance.
    */
-  def batchAllDedupeCache(cache: FetchCache)(implicit
-      F: Applicative[F]
-  ): F[DedupedRequest[F, Map[I, A]]]
+  def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]]
 
   /**
    * A lazy request for all elements from this `Fetch`. Like `batchAllDedupe` it will ignore the
    * existing cache for the request but it will keep the current state of the cache when chaining
    * requests.
    */
-  def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]]
+  def batchAllLazy: LazyRequest[F, Map[I, A]]
 }
 
 object AllFetch {
@@ -53,7 +51,7 @@ object AllFetch {
    * ignored the first time all values are requested. Afterward, future requests to this `Fetch`
    * instance will always and only check the cache.
    */
-  def fromExisting[F[_]: Monad, I, A](fetch: Fetch[F, I, A])(doBatchAll: F[Map[I, A]]) =
+  def fromExisting[F[_]: Applicative, I, A](fetch: Fetch[F, I, A])(doBatchAll: F[Map[I, A]]) =
     new AllFetch[F, I, A] {
       val id: String = fetch.id
 
@@ -84,7 +82,7 @@ object AllFetch {
 
       def batchAllDedupeCache(
           cache: FetchCache
-      )(implicit F: Applicative[F]): F[DedupedRequest[F, Map[I, A]]] =
+      ): F[DedupedRequest[F, Map[I, A]]] =
         if (cache.fetchAllAcc.contains(fetch.wrappedId)) {
           DedupedRequest[F, Map[I, A]](cache, cache.getMap(fetch)).pure[F]
         } else {
@@ -93,7 +91,7 @@ object AllFetch {
           }
         }
 
-      def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
+      def batchAllLazy: LazyRequest[F, Map[I, A]] = LazyRequest(
         Kleisli { c =>
           LazyRequest.ReqInfo
             .fetchAll(
