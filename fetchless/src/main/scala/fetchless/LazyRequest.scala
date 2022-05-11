@@ -219,13 +219,12 @@ object LazyRequest {
   final case class AllReqInfo[F[_], A](
       prevCache: FetchCache,
       fetchId: FetchId.StringId,
-      runFetchAll: F[DedupedRequest[F, Any]],
+      runFetchAll: Kleisli[F, FetchCache, DedupedRequest[F, Any]],
       getResultK: Kleisli[F, FetchCache, DedupedRequest[F, A]]
   ) extends ReqInfo[F, A] {
     def updateCache(extra: FetchCache): ReqInfo[F, A] = copy(prevCache = prevCache ++ extra)
     def runCached(c: FetchCache)(implicit F: Functor[F]): F[DedupedRequest[F, A]] =
-      if (prevCache.fetchAllAcc.contains(fetchId)) getResultK.run(c)
-      else runFetchAll.asInstanceOf[F[DedupedRequest[F, A]]]
+      runFetchAll(c).asInstanceOf[F[DedupedRequest[F, A]]]
     def run(implicit F: Functor[F]): F[DedupedRequest[F, A]] =
       runCached(prevCache)
   }
@@ -337,11 +336,9 @@ object LazyBatchRequest {
   // def single[F[_], I, A](fetch: Fetch[F, I, A])(i: I): LazyBatchRequest[F, Option[A]]
 
   final case class BReqInfo[F[_], A](
-      prevCache: FetchCache, // All previously batched requests
-      fetchAllReqs: Map[FetchId, F[
-        DedupedRequest[F, Any]
-      ]], // FetchAll requests that have yet to be made. IDs are contained in the acc above regardless.
-      batchReqsPerFetch: Map[ // Map of how, for each fetch ID, to get a batch, and what is currently to-be-batched
+      prevCache: FetchCache,
+      fetchAllReqs: Map[FetchId, Kleisli[F, FetchCache, DedupedRequest[F, Any]]],
+      batchReqsPerFetch: Map[
         FetchId,
         (Set[Any], (Set[Any], FetchCache) => F[FetchCache])
       ],
@@ -354,8 +351,9 @@ object LazyBatchRequest {
   ) {
     def run(implicit F: FlatMap[F], P: Parallel[F]): F[DedupedRequest[F, A]] = {
 
-      val liftedRequests: List[F[FetchCache]]   = otherReqs.toList.map(_._2.apply(prevCache))
-      val fetchAllRequests: List[F[FetchCache]] = fetchAllReqs.toList.map(_._2.map(_.unsafeCache))
+      val liftedRequests: List[F[FetchCache]] = otherReqs.toList.map(_._2.apply(prevCache))
+      val fetchAllRequests: List[F[FetchCache]] =
+        fetchAllReqs.toList.map(_._2.apply(prevCache).map(_.unsafeCache))
       val requests: List[F[FetchCache]] =
         liftedRequests ++ fetchAllRequests ++ batchReqsPerFetch.toList.collect {
           case (fetchId, (reqSet, get)) if (fetchAllReqs.get(fetchId).isEmpty) =>

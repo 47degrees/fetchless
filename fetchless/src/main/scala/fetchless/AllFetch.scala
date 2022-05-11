@@ -8,10 +8,9 @@ import cats.data.Kleisli
  * A variant of `Fetch` that allows you to request all available elements at once, without providing
  * IDs.
  *
- * Each of the `batchAll` and related methods overrides the deduplication functionality of normal
- * `Fetch` usage, so they are mainly useful for scenarios where you want to keep the `Fetch`
- * interface for your data source while retaining the option to get everything at once, as
- * necessary.
+ * Each of the `batchAll` and related methods will override whatever is currently in your cache on
+ * their first sequenced run. All future requests in the current deduplicated sequence will always
+ * try to retrieve a value from the cache rather than making a request.
  */
 trait AllFetch[F[_], I, A] extends Fetch[F, I, A] {
 
@@ -20,16 +19,20 @@ trait AllFetch[F[_], I, A] extends Fetch[F, I, A] {
 
   /**
    * Get every possible element from this `Fetch` but as a `DedupedRequest`, allowing you to dedupe
-   * future requests after this one.
+   * future requests after this one. All requests using the provided cache will see that all
+   * possible values have been cached, and no requests will be made for values related to this
+   * `Fetch` instance.
    */
   def batchAllDedupe: F[DedupedRequest[F, Map[I, A]]]
 
   /**
-   * Same as `batchAllDedupe` but using an initial cache. Deduping from this cache is ignored for
-   * this step as all elements are requested explicitly, but any other unrelated cached results are
-   * kept.
+   * Same as `batchAllDedupe` but using an initial cache. All requests using the provided cache will
+   * see that all possible values have been cached, and no requests will be made for values related
+   * to this `Fetch` instance.
    */
-  def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]]
+  def batchAllDedupeCache(cache: FetchCache)(implicit
+      F: Applicative[F]
+  ): F[DedupedRequest[F, Map[I, A]]]
 
   /**
    * A lazy request for all elements from this `Fetch`. Like `batchAllDedupe` it will ignore the
@@ -46,9 +49,9 @@ object AllFetch {
    * at once.
    *
    * Any calls to `batchAll` and related methods will override whatever is in the deduplication
-   * cache and you will always request all elements. This means that there may be some
-   * inconsistencies as deduplication is ignored. For example, you can use them as a way to
-   * prepopulate your result cache before making future requests.
+   * cache on first call. This means that there may be some inconsistencies as deduplication is
+   * ignored the first time all values are requested. Afterward, future requests to this `Fetch`
+   * instance will always and only check the cache.
    */
   def fromExisting[F[_]: Monad, I, A](fetch: Fetch[F, I, A])(doBatchAll: F[Map[I, A]]) =
     new AllFetch[F, I, A] {
@@ -79,15 +82,16 @@ object AllFetch {
         DedupedRequest(fetchCache, m)
       }
 
-      def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] = batchAll.map {
-        m =>
-          val fetchCache =
-            cache ++ FetchCache(
-              m.toList.map { case (i, a) => (i -> fetch.wrappedId) -> a.some }.toMap,
-              Set(fetch.wrappedId)
-            )
-          DedupedRequest(fetchCache, m)
-      }
+      def batchAllDedupeCache(
+          cache: FetchCache
+      )(implicit F: Applicative[F]): F[DedupedRequest[F, Map[I, A]]] =
+        if (cache.fetchAllAcc.contains(fetch.wrappedId)) {
+          DedupedRequest[F, Map[I, A]](cache, cache.getMap(fetch)).pure[F]
+        } else {
+          batchAllDedupe.map { df =>
+            df.copy(unsafeCache = cache ++ df.unsafeCache)
+          }
+        }
 
       def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
         Kleisli { c =>
@@ -95,9 +99,7 @@ object AllFetch {
             .fetchAll(
               c,
               wrappedId,
-              batchAllDedupeCache(c).asInstanceOf[F[
-                DedupedRequest[F, Any]
-              ]],
+              Kleisli(batchAllDedupeCache(_).asInstanceOf[F[DedupedRequest[F, Any]]]),
               Kleisli[F, FetchCache, DedupedRequest[F, Map[I, A]]] { fetchCache =>
                 DedupedRequest(
                   fetchCache,
