@@ -7,6 +7,7 @@ import cats.data.Kleisli
 import cats.syntax.all._
 import fs2.Stream
 import scala.concurrent.duration.FiniteDuration
+import cats.data.Chain
 
 /**
  * The ability to fetch values `A` given an ID `I`. Represents a data source such as a database,
@@ -16,6 +17,8 @@ trait Fetch[F[_], I, A] {
 
   /** Unique string ID used for deduping fetches */
   val id: String
+
+  val timer: FetchTimer[F]
 
   /** The ID of this fetch, in a typed wrapper used for internal comparisons. */
   lazy val wrappedId: FetchId.StringId = FetchId.StringId(id)
@@ -92,7 +95,7 @@ trait Fetch[F[_], I, A] {
   )(
       pfBatch: PartialFunction[Throwable, F[Map[I, A]]]
   )(implicit F: MonadThrow[F]): Fetch[F, I, A] =
-    Fetch.default[F, I, A](id)(
+    Fetch.default[F, I, A](id, timer)(
       single(_).recoverWith(pfSingle),
       batch(_).recoverWith(pfBatch)
     )
@@ -102,30 +105,62 @@ object Fetch {
 
   // Internally-used `Fetch` boilerplate instance for deriving behavior from the provided single/batch functions.
   private def default[F[_]: Applicative, I, A](
-      fetchId: String
+      fetchId: String,
+      fetchTimer: FetchTimer[F]
   )(fs: I => F[Option[A]], fb: Set[I] => F[Map[I, A]]) =
     new Fetch[F, I, A] {
 
-      val id: String = fetchId
+      val id = fetchId
+
+      val timer = fetchTimer
 
       def single(i: I): F[Option[A]] = fs(i)
 
       def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] =
-        single(i).map { oa =>
-          val cache = FetchCache(Map((i -> wrappedId) -> oa), Set.empty)
+        timer.time(single(i)).map { case (time, oa) =>
+          val logEntry = if (oa.isDefined) {
+            FetchCache.RequestLogEntry
+              .SingleRequest(
+                wrappedId,
+                i,
+                time,
+                FetchCache.SingleRequestResult.ValueFound
+              )
+          } else {
+            FetchCache.RequestLogEntry
+              .SingleRequest(
+                wrappedId,
+                i,
+                time,
+                FetchCache.SingleRequestResult.ValueNotFound
+              )
+          }
+          val cache = FetchCache(Map((i -> wrappedId) -> oa), Set.empty, Chain.one(logEntry))
           DedupedRequest(cache, oa)
         }
 
       def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         cache
           .get(this)(i) match {
-          case Some(existing) =>
-            DedupedRequest(cache, last = existing.some).pure[F]
-          case None =>
-            single(i).map {
-              case Some(a) =>
-                DedupedRequest(cache + ((i -> wrappedId) -> Some(a)), Some(a))
-              case None => DedupedRequest(cache + ((i -> wrappedId) -> none), none)
+          case FetchCache.GetValueResult.ValueExists(existing) =>
+            val newLog = FetchCache.RequestLogEntry.SingleRequest(
+              wrappedId,
+              i,
+              FetchCache.ResultTime.Instantaneous,
+              FetchCache.SingleRequestResult.ValueFound
+            )
+            DedupedRequest(cache.addLog(newLog), last = existing.some).pure[F]
+          case FetchCache.GetValueResult.ValueDoesNotExist() =>
+            val newLog = FetchCache.RequestLogEntry.SingleRequest(
+              wrappedId,
+              i,
+              FetchCache.ResultTime.Instantaneous,
+              FetchCache.SingleRequestResult.ValueNotFound
+            )
+            DedupedRequest(cache.addLog(newLog), none[A]).pure[F]
+          case FetchCache.GetValueResult.ValueNotYetRequested() =>
+            singleDedupeCache(i)(cache).map {
+              DedupedRequest.prepopulated[F](cache).absorb(_)
             }
         }
 
@@ -146,7 +181,12 @@ object Fetch {
               getResultK = Kleisli[F, FetchCache, DedupedRequest[F, Option[A]]] { kCache =>
                 DedupedRequest
                   .prepopulated[F](kCache)
-                  .copy(last = kCache.get(this)(i))
+                  .copy(
+                    last = kCache.get(this)(i) match {
+                      case FetchCache.GetValueResult.ValueExists(v) => v.some
+                      case _                                        => none
+                    }
+                  )
                   .pure[F]
               },
               mapTo = _.asInstanceOf[DedupedRequest[F, Option[A]]]
@@ -157,32 +197,63 @@ object Fetch {
 
       def batch(iSet: Set[I]): F[Map[I, A]] = fb(iSet)
 
-      def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] =
-        batch(iSet).map { resultMap =>
+      def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = batchDedupeContext(iSet)
+
+      // Internal helper to provide context from the cache
+      private def batchDedupeContext(
+          iSet: Set[I],
+          existingIds: Set[I] = Set.empty,
+          missingIds: Set[I] = Set.empty
+      ): F[DedupedRequest[F, Map[I, A]]] =
+        timer.time(batch(iSet)).map { case (t, resultMap) =>
           val missing = iSet.diff(resultMap.keySet)
           val initialCache: FetchCache = FetchCache(
             resultMap.view
               .map[(I, FetchId), Option[A]] { case (i, a) => (i -> wrappedId) -> a.some }
               .toMap,
-            Set.empty
+            Set.empty,
+            Chain.one(
+              FetchCache.RequestLogEntry.BatchRequest(
+                wrappedId,
+                resultMap.keySet.asInstanceOf[Set[Any]] ++ existingIds.asInstanceOf[Set[Any]],
+                missing.asInstanceOf[Set[Any]] ++ missingIds.asInstanceOf[Set[Any]],
+                t
+              )
+            )
           )
           val missingCache: FetchCache =
-            FetchCache(missing.toList.map(i => (i -> wrappedId) -> none[A]).toMap, Set.empty)
+            FetchCache(
+              missing.toList.map(i => (i -> wrappedId) -> none[A]).toMap,
+              Set.empty,
+              Chain.empty
+            )
           DedupedRequest(initialCache ++ missingCache, resultMap)
         }
 
       def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] = {
-        val (needed, existing) = iSet.foldLeft(Set.empty[I], Map.empty[I, A]) {
-          case ((iSet, cached), i) =>
+        val (needed, missing, existing) =
+          iSet.foldLeft(Set.empty[I], Set.empty[I], Map.empty[I, A]) { case ((n, m, e), i) =>
             cache.get(this)(i) match {
-              case Some(a) => (iSet, cached + (i -> a.asInstanceOf[A]))
-              case None    => (iSet + i, cached)
+              case FetchCache.GetValueResult.ValueNotYetRequested() => (n + i, m, e)
+              case FetchCache.GetValueResult.ValueExists(a) =>
+                (n, m, e + (i -> a.asInstanceOf[A]))
+              case _ => (n, m + i, e)
             }
-        }
+          }
         if (needed.isEmpty) {
-          DedupedRequest(cache, cache.getMapForSet(this)(iSet)).pure[F]
+          DedupedRequest(
+            cache.addLog(
+              FetchCache.RequestLogEntry.BatchRequest(
+                wrappedId,
+                iSet.asInstanceOf[Set[Any]],
+                Set.empty,
+                FetchCache.ResultTime.Instantaneous
+              )
+            ),
+            cache.getMapForSetOnlyExisting(this)(iSet)
+          ).pure[F]
         } else {
-          batchDedupe(needed).map { result =>
+          batchDedupeContext(needed, existing.keySet, missing).map { result =>
             DedupedRequest.prepopulated[F](cache).absorb(result)
           }
         }
@@ -223,7 +294,7 @@ object Fetch {
    */
   def singleSequenced[F[_]: Monad, I, A](
       fetchId: String
-  )(f: I => F[Option[A]]): Fetch[F, I, A] = default[F, I, A](fetchId)(
+  )(f: I => F[Option[A]]): Fetch[F, I, A] = default[F, I, A](fetchId, FetchTimer.noop)(
     f,
     iSet => iSet.toList.traverse(i => f(i).map(_.tupleLeft(i))).map(_.flattenOption.toMap)
   )
@@ -234,7 +305,7 @@ object Fetch {
    */
   def singleParallel[F[_]: Monad: Parallel, I, A](
       fetchId: String
-  )(f: I => F[Option[A]]): Fetch[F, I, A] = default[F, I, A](fetchId)(
+  )(f: I => F[Option[A]]): Fetch[F, I, A] = default[F, I, A](fetchId, FetchTimer.noop)(
     f,
     iSet => iSet.toList.parTraverse(i => f(i).map(_.tupleLeft(i))).map(_.flattenOption.toMap)
   )
@@ -242,7 +313,7 @@ object Fetch {
   /** A `Fetch` instance that has separate single and batch fetch implementations. */
   def batchable[F[_]: Monad, I, A](fetchId: String)(single: I => F[Option[A]])(
       batch: Set[I] => F[Map[I, A]]
-  ): Fetch[F, I, A] = default[F, I, A](fetchId)(single, batch)
+  ): Fetch[F, I, A] = default[F, I, A](fetchId, FetchTimer.noop)(single, batch)
 
   /**
    * A `Fetch` instance that has only the ability to make batch requests. Single fetches are
@@ -252,11 +323,14 @@ object Fetch {
   def batchOnly[F[_]: Monad, I, A](
       fetchId: String
   )(batchFunction: Set[I] => F[Map[I, A]]): Fetch[F, I, A] =
-    default[F, I, A](fetchId)(i => batchFunction(Set(i)).map(_.get(i)), batchFunction)
+    default[F, I, A](fetchId, FetchTimer.noop)(
+      i => batchFunction(Set(i)).map(_.get(i)),
+      batchFunction
+    )
 
   /** A `Fetch` instance backed by a local map. Useful for testing, debugging, or other usages. */
   def const[F[_]: Monad, I, A](fetchId: String)(map: Map[I, A]) = {
-    default[F, I, A](fetchId)(
+    default[F, I, A](fetchId, FetchTimer.noop)(
       i => map.get(i).pure[F],
       iSet => map.filter { case (i, _) => iSet.contains(i) }.pure[F]
     )
@@ -265,7 +339,7 @@ object Fetch {
   /**
    * A `Fetch` instance that always returns the same value that you give it.
    */
-  def echo[F[_]: Monad, I](fetchId: String) = default[F, I, I](fetchId)(
+  def echo[F[_]: Monad, I](fetchId: String) = default[F, I, I](fetchId, FetchTimer.noop)(
     i => i.some.pure[F],
     iSet => iSet.toList.map(i => i -> i).toMap.pure[F]
   )
@@ -283,7 +357,7 @@ object Fetch {
   implicit def fetchProfunctor[F[_]: Monad]: Profunctor[Fetch[F, *, *]] =
     new Profunctor[Fetch[F, *, *]] {
       def dimap[A, B, C, D](fab: Fetch[F, A, B])(f: C => A)(g: B => D): Fetch[F, C, D] =
-        default[F, C, D](fab.id)(
+        default[F, C, D](fab.id, FetchTimer.noop)(
           i => fab.single(f(i)).map(_.map(g)),
           { is =>
             val setMap = is.toList.map(c => f(c) -> c).toMap
@@ -295,7 +369,7 @@ object Fetch {
       // Override for efficiency, don't think we'd gain much overriding the lmap case
       // since that case still has to do the set/map behavior defined above
       override def rmap[A, B, C](fab: Fetch[F, A, B])(f: B => C): Fetch[F, A, C] =
-        default[F, A, C](fab.id)(
+        default[F, A, C](fab.id, FetchTimer.noop)(
           i => fab.single(i).map(_.map(f)),
           is => fab.batch(is).map(_.view.mapValues(f).toMap)
         )

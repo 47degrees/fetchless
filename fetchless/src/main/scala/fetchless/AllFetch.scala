@@ -3,6 +3,7 @@ package fetchless
 import cats.{Applicative, Monad}
 import cats.syntax.all._
 import cats.data.Kleisli
+import cats.data.Chain
 
 /**
  * A variant of `Fetch` that allows you to request all available elements at once, without providing
@@ -55,6 +56,8 @@ object AllFetch {
     new AllFetch[F, I, A] {
       val id: String = fetch.id
 
+      val timer = FetchTimer.noop[F] // TODO: wire this in
+
       def single(i: I): F[Option[A]] = fetch.single(i)
 
       def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
@@ -77,14 +80,22 @@ object AllFetch {
 
       def batchAll: F[Map[I, A]] = doBatchAll
 
-      def batchAllDedupe: F[DedupedRequest[F, Map[I, A]]] = batchAll.map { m =>
-        val fetchCache =
-          FetchCache(
-            m.toList.map { case (i, a) => (i -> fetch.wrappedId) -> a.some }.toMap,
-            Set(fetch.wrappedId)
-          )
-        DedupedRequest(fetchCache, m)
-      }
+      def batchAllDedupe: F[DedupedRequest[F, Map[I, A]]] =
+        timer.time(batchAll).map { case (t, m) =>
+          val fetchCache =
+            FetchCache(
+              m.toList.map { case (i, a) => (i -> fetch.wrappedId) -> a.some }.toMap,
+              Set(fetch.wrappedId),
+              Chain.one(
+                FetchCache.RequestLogEntry.AllRequest(
+                  fetch.wrappedId,
+                  m.keySet.asInstanceOf[Set[Any]],
+                  t
+                )
+              )
+            )
+          DedupedRequest(fetchCache, m)
+        } // TODO: double check to see if cached logic in base fetch respects BatchAll calls
 
       def batchAllDedupeCache(
           cache: FetchCache

@@ -30,6 +30,8 @@ object StreamingAllFetch {
     new StreamingAllFetch[F, I, A] {
       val id: String = fetch.id
 
+      val timer = fetch.timer
+
       def single(i: I): F[Option[A]] = fetch.single(i)
 
       def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
@@ -101,6 +103,8 @@ object StreamingAllFetch {
     new StreamingAllFetch[F, I, A] {
       val id: String = fetch.id
 
+      val timer = fetch.timer
+
       def single(i: I): F[Option[A]] = fetch.single(i)
 
       def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
@@ -166,6 +170,8 @@ object StreamingAllFetch {
   )(doStreamAll: Stream[F, (I, A)]): StreamingAllFetch[F, I, A] =
     new StreamingAllFetch[F, I, A] {
       val id: String = fetch.id
+
+      val timer = fetch.timer
 
       def single(i: I): F[Option[A]] = fetch.single(i)
 

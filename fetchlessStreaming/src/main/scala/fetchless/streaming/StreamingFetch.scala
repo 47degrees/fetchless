@@ -41,6 +41,8 @@ object StreamingFetch {
   ) = new StreamingFetch[F, I, A] {
     val id: String = fetch.id
 
+    val timer = fetch.timer
+
     def single(i: I): F[Option[A]] = fetch.single(i)
 
     def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] = fetch.singleDedupe(i)
@@ -79,6 +81,8 @@ object StreamingFetch {
       doStreamingBatchGuaranteed: Set[I] => Stream[F, (I, A)]
   ) = new StreamingFetch[F, I, A] {
     val id: String = fetch.id
+
+    val timer = fetch.timer
 
     def single(i: I): F[Option[A]] = fetch.single(i)
 
@@ -129,6 +133,8 @@ object StreamingFetch {
    */
   def wrapExistingWithDefaults[F[_], I, A](fetch: Fetch[F, I, A]) = new StreamingFetch[F, I, A] {
     val id: String = fetch.id
+
+    val timer = fetch.timer
 
     def single(i: I): F[Option[A]] = fetch.single(i)
 

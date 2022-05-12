@@ -28,6 +28,8 @@ abstract class DebugFetch[F[_]: Concurrent: Clock, I, A](
   }
   val id: String = fetch.id
 
+  val timer = fetch.timer
+
   def single(i: I): F[Option[A]] = updateAndDo(fetch.single(i))(DebugLog.FetchType.Fetch(i))
 
   def singleDedupe(i: I): F[DedupedRequest[F, Option[A]]] =
@@ -53,7 +55,10 @@ abstract class DebugFetch[F[_]: Concurrent: Clock, I, A](
           getResultK = Kleisli[F, FetchCache, DedupedRequest[F, Option[A]]] { kCache =>
             DedupedRequest
               .prepopulated[F](kCache)
-              .copy(last = kCache.get(this)(i))
+              .copy(last = kCache.get(this)(i) match {
+                case FetchCache.GetValueResult.ValueExists(v) => v.some
+                case _                                        => none
+              })
               .pure[F]
           },
           mapTo = _.asInstanceOf[DedupedRequest[F, Option[A]]]
@@ -119,6 +124,7 @@ object DebugFetch {
   def wrap[F[_]: Concurrent: Clock, I, A](fetch: Fetch[F, I, A]): F[DebugFetch[F, I, A]] =
     Concurrent[F].ref(Chain.empty[DebugLog[I]]).map { ref =>
       new DebugFetch[F, I, A](fetch, ref) {
+
         def getDebugLogs: F[Chain[DebugLog[I]]] = ref.get
 
         def flushLogs: F[Chain[DebugLog[I]]] = ref.modify(c => (Chain.empty, c))

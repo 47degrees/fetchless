@@ -13,6 +13,7 @@ object DebugLog {
 
   object FetchType {
     final case class Fetch[I](id: I)                  extends FetchType[I]
+    final case class FetchAll[I]()                    extends FetchType[I]
     final case class FetchDedupe[I](id: I)            extends FetchType[I]
     final case class FetchBatch[I](ids: Set[I])       extends FetchType[I]
     final case class FetchBatchDedupe[I](ids: Set[I]) extends FetchType[I]

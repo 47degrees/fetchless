@@ -91,7 +91,18 @@ final case class LazyRequest[F[_], A](
               Map.empty,
               Map.empty,
               Map(
-                id -> getResultK.map(c => c.unsafeCache + ((id, FetchId.Lifted) -> Some(c.last)))
+                id -> getResultK.map(c =>
+                  c.unsafeCache ++ FetchCache(
+                    Map((id, FetchId.Lifted) -> Some(c.last)),
+                    Set.empty,
+                    Chain.one(
+                      FetchCache.RequestLogEntry.LiftedRequest(
+                        id,
+                        FetchCache.ResultTime.TimeNotRequested
+                      ) // TODO: wire in timer for this
+                    )
+                  )
+                )
               ),
               Kleisli { fetchCache =>
                 DedupedRequest[F, A](
@@ -196,7 +207,16 @@ object LazyRequest {
           c.cacheMap.get(reqId -> FetchId.Lifted) match {
             case None =>
               fa.map { a =>
-                val newCache = c + ((reqId -> FetchId.Lifted), Some(a))
+                val newCache = c ++ FetchCache(
+                  Map((reqId -> FetchId.Lifted) -> Some(a)),
+                  Set.empty,
+                  Chain.one(
+                    FetchCache.RequestLogEntry.LiftedRequest(
+                      reqId,
+                      FetchCache.ResultTime.TimeNotRequested
+                    ) // TODO: wire in timer for this
+                  )
+                )
                 DedupedRequest(newCache, a)
               }
             case Some(value) =>
@@ -272,7 +292,18 @@ object LazyRequest {
     def updateCache(extra: FetchCache): ReqInfo[F, A] = copy(prevCache = prevCache ++ extra)
     def runCached(c: FetchCache)(implicit F: Functor[F]): F[DedupedRequest[F, A]] = {
       getResultK(c).map(df =>
-        df.copy(unsafeCache = df.unsafeCache + ((reqId, FetchId.Lifted), Some(df.last)))
+        df.copy(unsafeCache =
+          df.unsafeCache ++ FetchCache(
+            Map((reqId, FetchId.Lifted) -> Some(df.last)),
+            Set.empty,
+            Chain.one(
+              FetchCache.RequestLogEntry.LiftedRequest(
+                reqId,
+                FetchCache.ResultTime.TimeNotRequested
+              ) // TODO: wire in timer for this
+            )
+          )
+        )
       )
     }
     def run(implicit F: Functor[F]): F[DedupedRequest[F, A]] =
