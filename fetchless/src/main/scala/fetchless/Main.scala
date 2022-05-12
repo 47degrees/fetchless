@@ -17,13 +17,8 @@ object Main extends IOApp {
 
     val testProgram = initList.traverse_(i => testFetch.singleLazy(i)).run
 
-    val testProgram2 =
-      initList.traverse_(i => LazyBatchRequest.single[IO, Int, Int](testFetch)(i)).run
-
     val testProgram4 =
       initList.parTraverse_(i => testFetch.singleLazy(i)).run
-
-    val testProgram5 = LazyBatchRequest.many(testFetch)(initList.toSet).run
 
     val testProgram3 =
       initList.traverse_(i => testFetch.singleDedupe(i))
@@ -47,10 +42,8 @@ object Main extends IOApp {
 
     for {
       time6 <- collectAvg(testProgram6, 40)
-      time5 <- collectAvg(testProgram5.void, 40)
       time4 <- collectAvg(testProgram4.void, 40)
       time3 <- collectAvg(testProgram3, 40)
-      time2 <- collectAvg(testProgram2.void, 40)
       time1 <- collectAvg(testProgram.void, 40)
       _     <- IO.println("Immediate fetch traverse result")
       _     <- IO.println(time6)
@@ -58,10 +51,6 @@ object Main extends IOApp {
       _     <- IO.println(time3)
       _     <- IO.println("LazyRequest traverse result")
       _     <- IO.println(time1)
-      _     <- IO.println("LazyBatchRequest set result")
-      _     <- IO.println(time5)
-      _     <- IO.println("LazyBatchRequest traverse result")
-      _     <- IO.println(time2)
       _     <- IO.println("LazyRequest parTraverse result")
       _     <- IO.println(time4)
     } yield ExitCode.Success
