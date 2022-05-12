@@ -1,10 +1,7 @@
 package fetchless
 
-import cats.Applicative
+import cats.{Applicative, Functor, Monad}
 import cats.syntax.all._
-import cats.FlatMap
-import cats.Monad
-import cats.Functor
 
 /**
  * A fetch request after being ran, along with a local cache of other recent fetches done in the
@@ -61,9 +58,11 @@ final case class DedupedRequest[F[_], A](
 
 object DedupedRequest {
 
+  /** An empty `DedupedRequest` that has the given cache. */
   def prepopulated[F[_]](cache: FetchCache): DedupedRequest[F, Unit] =
     DedupedRequest(cache, ())
 
+  /** An empty `DedupedRequest` with an empty cache. */
   def empty[F[_]]: DedupedRequest[F, Unit] = prepopulated(FetchCache.empty)
 
   /** `cats.Monad` instance for `DedupedRequest` */
@@ -86,6 +85,7 @@ object DedupedRequest {
 
     }
 
+  /** `cats.Applicative` instance for `DedupedRequest` */
   implicit def dedupedRequestA[F[_]: Applicative]: Applicative[DedupedRequest[F, *]] =
     new Applicative[DedupedRequest[F, *]] {
       def ap[A, B](ff: DedupedRequest[F, A => B])(fa: DedupedRequest[F, A]): DedupedRequest[F, B] =
@@ -95,6 +95,7 @@ object DedupedRequest {
 
     }
 
+  /** `cats.Functor` instance for `DedupedRequest` */
   implicit def dedupedRequestF[F[_]: Functor]: Functor[DedupedRequest[F, *]] =
     new Functor[DedupedRequest[F, *]] {
       def map[A, B](fa: DedupedRequest[F, A])(f: A => B): DedupedRequest[F, B] =

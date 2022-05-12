@@ -22,7 +22,7 @@ object StreamingAllFetch {
    * would recommend using `fromExistingAllFetchWithDefaults` instead as that is specially optimized
    * for that case.
    */
-  def fromExistingAllFetch[F[_]: Functor, I, A](
+  def fromExistingAllFetch[F[_]: Applicative, I, A](
       fetch: AllFetch[F, I, A]
   )(
       doStreamingBatch: Set[I] => Stream[F, (I, Option[A])]
@@ -37,12 +37,18 @@ object StreamingAllFetch {
       def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         fetch.singleDedupeCache(i)(cache)
 
+      def singleLazy(i: I): LazyRequest[F, Option[A]] =
+        fetch.singleLazy(i)
+
       def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
       def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
       def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchDedupeCache(iSet)(cache)
+
+      def batchLazy(iSet: Set[I]): LazyRequest[F, Map[I, A]] =
+        fetch.batchLazy(iSet)
 
       def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] =
         doStreamingBatch(iSet)
@@ -57,17 +63,23 @@ object StreamingAllFetch {
       def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchAllDedupeCache(cache)
 
-      def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
-        Kleisli(c =>
+      def batchAllLazy: LazyRequest[F, Map[I, A]] = LazyRequest(
+        Kleisli { c =>
           LazyRequest.ReqInfo
-            .fetchAll[F, Map[I, A]](
+            .fetchAll(
               c,
-              fetch.wrappedId,
-              batchAllDedupeCache(c).asInstanceOf[F[DedupedRequest[F, Any]]],
-              Kleisli(c2 => DedupedRequest[F, Map[I, A]](c2, c2.getMap(fetch)).pure[F])
+              wrappedId,
+              Kleisli(batchAllDedupeCache(_).asInstanceOf[F[DedupedRequest[F, Any]]]),
+              Kleisli[F, FetchCache, DedupedRequest[F, Map[I, A]]] { fetchCache =>
+                DedupedRequest(
+                  fetchCache,
+                  fetchCache.getMap(this)
+                )
+                  .pure[F]
+              }
             )
             .pure[F]
-        )
+        }
       )
 
       def streamAll: Stream[F, (I, A)] = doStreamAll
@@ -83,7 +95,7 @@ object StreamingAllFetch {
    * `fromExistingAllFetch` instead and provide your own methods to stream data from your data
    * source.
    */
-  def fromExistingAllFetchWithDefaults[F[_]: Functor, I, A](
+  def fromExistingAllFetchWithDefaults[F[_]: Applicative, I, A](
       fetch: AllFetch[F, I, A]
   ): StreamingAllFetch[F, I, A] =
     new StreamingAllFetch[F, I, A] {
@@ -96,12 +108,18 @@ object StreamingAllFetch {
       def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         fetch.singleDedupeCache(i)(cache)
 
+      def singleLazy(i: I): LazyRequest[F, Option[A]] =
+        fetch.singleLazy(i)
+
       def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
       def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
       def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchDedupeCache(iSet)(cache)
+
+      def batchLazy(iSet: Set[I]): LazyRequest[F, Map[I, A]] =
+        fetch.batchLazy(iSet)
 
       def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] =
         Stream.eval(batch(iSet)).flatMap(m => Stream.iterable(iSet).map(i => i -> m.get(i)))
@@ -116,14 +134,20 @@ object StreamingAllFetch {
       def batchAllDedupeCache(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchAllDedupeCache(cache)
 
-      def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
+      def batchAllLazy: LazyRequest[F, Map[I, A]] = LazyRequest(
         Kleisli { c =>
           LazyRequest.ReqInfo
             .fetchAll(
               c,
-              fetch.wrappedId,
-              batchAllDedupeCache(c).asInstanceOf[F[DedupedRequest[F, Any]]],
-              Kleisli(c2 => DedupedRequest[F, Map[I, A]](c2, c2.getMap(fetch)).pure[F])
+              wrappedId,
+              Kleisli(batchAllDedupeCache(_).asInstanceOf[F[DedupedRequest[F, Any]]]),
+              Kleisli[F, FetchCache, DedupedRequest[F, Map[I, A]]] { fetchCache =>
+                DedupedRequest(
+                  fetchCache,
+                  fetchCache.getMap(this)
+                )
+                  .pure[F]
+              }
             )
             .pure[F]
         }
@@ -137,7 +161,7 @@ object StreamingAllFetch {
    * Turns an existing `StreamingFetch` into a `StreamingAllFetch` by allowing you to provide
    * methods for batching and streaming all possible
    */
-  def fromExistingStreamingFetch[F[_]: Functor, I, A](fetch: StreamingFetch[F, I, A])(
+  def fromExistingStreamingFetch[F[_]: Applicative, I, A](fetch: StreamingFetch[F, I, A])(
       doBatchAll: F[Map[I, A]]
   )(doStreamAll: Stream[F, (I, A)]): StreamingAllFetch[F, I, A] =
     new StreamingAllFetch[F, I, A] {
@@ -150,12 +174,18 @@ object StreamingAllFetch {
       def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
         fetch.singleDedupeCache(i)(cache)
 
+      def singleLazy(i: I): LazyRequest[F, Option[A]] =
+        fetch.singleLazy(i)
+
       def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
       def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
       def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
         fetch.batchDedupeCache(iSet)(cache)
+
+      def batchLazy(iSet: Set[I]): LazyRequest[F, Map[I, A]] =
+        fetch.batchLazy(iSet)
 
       def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] = fetch.streamingBatch(iSet)
 
@@ -184,14 +214,20 @@ object StreamingAllFetch {
           )
       }
 
-      def batchAllLazy(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] = LazyRequest(
+      def batchAllLazy: LazyRequest[F, Map[I, A]] = LazyRequest(
         Kleisli { c =>
           LazyRequest.ReqInfo
             .fetchAll(
               c,
-              fetch.wrappedId,
-              batchAllDedupeCache(c).asInstanceOf[F[DedupedRequest[F, Any]]],
-              Kleisli(c2 => DedupedRequest[F, Map[I, A]](c2, c2.getMap(fetch)).pure[F])
+              wrappedId,
+              Kleisli(batchAllDedupeCache(_).asInstanceOf[F[DedupedRequest[F, Any]]]),
+              Kleisli[F, FetchCache, DedupedRequest[F, Map[I, A]]] { fetchCache =>
+                DedupedRequest(
+                  fetchCache,
+                  fetchCache.getMap(this)
+                )
+                  .pure[F]
+              }
             )
             .pure[F]
         }

@@ -48,12 +48,18 @@ object StreamingFetch {
     def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
       fetch.singleDedupeCache(i)(cache)
 
+    def singleLazy(i: I): LazyRequest[F, Option[A]] =
+      fetch.singleLazy(i)
+
     def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
     def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
     def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupeCache(iSet)(cache)
+
+    def batchLazy(iSet: Set[I]): LazyRequest[F, Map[I, A]] =
+      fetch.batchLazy(iSet)
 
     def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] =
       doStreamingBatch(iSet)
@@ -81,12 +87,18 @@ object StreamingFetch {
     def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
       fetch.singleDedupeCache(i)(cache)
 
+    def singleLazy(i: I): LazyRequest[F, Option[A]] =
+      fetch.singleLazy(i)
+
     def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
     def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
     def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupeCache(iSet)(cache)
+
+    def batchLazy(iSet: Set[I]): LazyRequest[F, Map[I, A]] =
+      fetch.batchLazy(iSet)
 
     override def streamingBatchFilterOption(iSet: Set[I]): Stream[F, (I, A)] =
       doStreamingBatchGuaranteed(iSet)
@@ -125,12 +137,18 @@ object StreamingFetch {
     def singleDedupeCache(i: I)(cache: FetchCache): F[DedupedRequest[F, Option[A]]] =
       fetch.singleDedupeCache(i)(cache)
 
+    def singleLazy(i: I): LazyRequest[F, Option[A]] =
+      fetch.singleLazy(i)
+
     def batch(iSet: Set[I]): F[Map[I, A]] = fetch.batch(iSet)
 
     def batchDedupe(iSet: Set[I]): F[DedupedRequest[F, Map[I, A]]] = fetch.batchDedupe(iSet)
 
     def batchDedupeCache(iSet: Set[I])(cache: FetchCache): F[DedupedRequest[F, Map[I, A]]] =
       fetch.batchDedupeCache(iSet)(cache)
+
+    def batchLazy(iSet: Set[I]): LazyRequest[F, Map[I, A]] =
+      fetch.batchLazy(iSet)
 
     def streamingBatch(iSet: Set[I]): Stream[F, (I, Option[A])] =
       Stream.eval(batch(iSet)).flatMap(m => Stream.iterable(iSet).map(i => i -> m.get(i)))
