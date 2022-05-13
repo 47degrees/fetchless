@@ -99,6 +99,9 @@ trait Fetch[F[_], I, A] {
       single(_).recoverWith(pfSingle),
       batch(_).recoverWith(pfBatch)
     )
+
+  def withTimer(implicit F: Applicative[F], C: Clock[F]) =
+    Fetch.default[F, I, A](id, FetchTimer.clock[F])(single _, batch _)
 }
 
 object Fetch {
@@ -159,7 +162,7 @@ object Fetch {
             )
             DedupedRequest(cache.addLog(newLog), none[A]).pure[F]
           case FetchCache.GetValueResult.ValueNotYetRequested() =>
-            singleDedupeCache(i)(cache).map {
+            singleDedupe(i).map {
               DedupedRequest.prepopulated[F](cache).absorb(_)
             }
         }
