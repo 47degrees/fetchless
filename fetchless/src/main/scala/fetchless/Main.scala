@@ -11,7 +11,7 @@ import scala.concurrent.duration.FiniteDuration
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
     val baseFetch: Fetch[IO, Int, Int] =
-      Fetch.singleSequenced[IO, Int, Int]("testFetch")(i => IO.pure(Some(i))).withTimer
+      Fetch.singleSequenced[IO, Int, Int]("testFetch")(i => IO.pure(Some(i)))
 
     def runTest(implicit testFetch: Fetch[IO, Int, Int]) = {
       val initList = (1 to 50000).toList
@@ -66,6 +66,6 @@ object Main extends IOApp {
       printBar >>
       IO.println("With timer") >>
       printBar >>
-      runTest(baseFetch.withTimer)
+      runTest(Fetch.withTimer(baseFetch))
   }
 }

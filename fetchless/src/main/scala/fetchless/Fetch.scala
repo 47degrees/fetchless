@@ -81,27 +81,6 @@ trait Fetch[F[_], I, A] {
    */
   def batchLazy[G[_]: Traverse](is: G[I])(implicit F: Applicative[F]): LazyRequest[F, Map[I, A]] =
     batchLazy(is.toIterable.toSet)
-
-  /**
-   * Returns a new `Fetch` instance that recovers from errors, derived from the current `Fetch`
-   * instance. For example, if you are given an unsafe `Fetch` instance that will raise errors on
-   * conditions you want to recover from gracefully, you can specify them using this wrapper.
-   *
-   * This takes two arguments, both `PartialFunction` from `Throwable` to the result type of
-   * `single` and `batch` operations respectively.
-   */
-  def recoverWith(
-      pfSingle: PartialFunction[Throwable, F[Option[A]]]
-  )(
-      pfBatch: PartialFunction[Throwable, F[Map[I, A]]]
-  )(implicit F: MonadThrow[F]): Fetch[F, I, A] =
-    Fetch.default[F, I, A](id, timer)(
-      single(_).recoverWith(pfSingle),
-      batch(_).recoverWith(pfBatch)
-    )
-
-  def withTimer(implicit F: Applicative[F], C: Clock[F]) =
-    Fetch.default[F, I, A](id, FetchTimer.clock[F])(single _, batch _)
 }
 
 object Fetch {
@@ -346,6 +325,36 @@ object Fetch {
     i => i.some.pure[F],
     iSet => iSet.toList.map(i => i -> i).toMap.pure[F]
   )
+
+  /**
+   * Returns a modified `Fetch` instance that recovers from errors, derived from the supplied
+   * `Fetch` instance. For example, if you are given an unsafe `Fetch` instance that will raise
+   * errors on conditions you want to recover from gracefully, you can handle those errors by
+   * wrapping it with this.
+   *
+   * In addition to the fetch instance you are modifying, this takes two function arguments, both
+   * `PartialFunction` from `Throwable` to the result type of `single` and `batch` operations
+   * respectively.
+   */
+  def recoverWith[F[_], I, A](baseFetch: Fetch[F, I, A])(
+      pfSingle: PartialFunction[Throwable, F[Option[A]]]
+  )(
+      pfBatch: PartialFunction[Throwable, F[Map[I, A]]]
+  )(implicit F: MonadThrow[F]): Fetch[F, I, A] =
+    Fetch.default[F, I, A](baseFetch.id, baseFetch.timer)(
+      baseFetch.single(_).recoverWith(pfSingle),
+      baseFetch.batch(_).recoverWith(pfBatch)
+    )
+
+  /**
+   * Creates a `Fetch` with a built-in timer for logging access times for fetch requests. By
+   * default, no times are recorded, so opting into this can give you more insight into how long
+   * your requests are taking to complete.
+   */
+  def withTimer[F[_]: Applicative: Clock, I, A](
+      baseFetch: Fetch[F, I, A]
+  ): Fetch[F, I, A] =
+    Fetch.default[F, I, A](baseFetch.id, FetchTimer.clock[F])(baseFetch.single _, baseFetch.batch _)
 
   /**
    * A `Profunctor` instance for `Fetch` so as to allow for calling `lmap`, `rmap`, and `dimap`
