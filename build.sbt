@@ -21,8 +21,6 @@ lazy val root = (project in file("."))
   .aggregate(
     fetchlessJVM,
     fetchlessJS,
-    fetchlessDebugJVM,
-    fetchlessDebugJS,
     fetchlessDoobieJVM,
     fetchlessStreamingJVM,
     fetchlessStreamingJS,
@@ -39,15 +37,6 @@ lazy val fetchless = crossProject(JSPlatform, JVMPlatform)
 
 lazy val fetchlessJVM = fetchless.jvm
 lazy val fetchlessJS = fetchless.js
-  .settings(crossScalaVersions := scala2Versions)
-
-lazy val fetchlessDebug = crossProject(JSPlatform, JVMPlatform)
-  .crossType(CrossType.Pure)
-  .settings(crossScalaVersions := allScalaVersions)
-  .dependsOn(fetchless % "compile->compile;test->test")
-
-lazy val fetchlessDebugJVM = fetchlessDebug.jvm
-lazy val fetchlessDebugJS = fetchlessDebug.js
   .settings(crossScalaVersions := scala2Versions)
 
 lazy val fetchlessStreaming = crossProject(JSPlatform, JVMPlatform)
