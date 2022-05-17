@@ -10,6 +10,7 @@ import cats.effect.unsafe.implicits.global
 import cats.effect.kernel.Ref
 import munit.CatsEffectSuite
 import cats.effect.Clock
+import cats.data.Chain
 
 class LazyRequestSpec extends CatsEffectSuite {
 
@@ -64,8 +65,55 @@ class LazyRequestSpec extends CatsEffectSuite {
 
     val resultsPar = (intFetch.singleLazy(5) >> requests.parSequence).run
 
-    assertEquals(resultsLinear, resultsPar)
+    // Compare what linear/par have in common
+    assertEquals(resultsLinear.last, resultsPar.last)
+    assertEquals(resultsLinear.unsafeCache.cacheMap, resultsPar.unsafeCache.cacheMap)
+    assertEquals(resultsLinear.unsafeCache.fetchAllAcc, resultsPar.unsafeCache.fetchAllAcc)
 
+    // Linear results exact
+    assertEquals(
+      resultsLinear,
+      DedupedRequest[Id, List[Option[Int]]](
+        FetchCache(
+          Map(
+            (5, intFetch.wrappedId) -> Some(5),
+            (1, intFetch.wrappedId) -> Some(1),
+            (2, intFetch.wrappedId) -> Some(2),
+            (3, intFetch.wrappedId) -> Some(3)
+          ),
+          Set.empty,
+          Chain(
+            FetchCache.RequestLogEntry.SingleRequest(
+              intFetch.wrappedId,
+              5,
+              FetchCache.ResultTime.TimeNotRequested,
+              FetchCache.SingleRequestResult.ValueFound
+            ),
+            FetchCache.RequestLogEntry.SingleRequest(
+              intFetch.wrappedId,
+              1,
+              FetchCache.ResultTime.TimeNotRequested,
+              FetchCache.SingleRequestResult.ValueFound
+            ),
+            FetchCache.RequestLogEntry.SingleRequest(
+              intFetch.wrappedId,
+              2,
+              FetchCache.ResultTime.TimeNotRequested,
+              FetchCache.SingleRequestResult.ValueFound
+            ),
+            FetchCache.RequestLogEntry.SingleRequest(
+              intFetch.wrappedId,
+              3,
+              FetchCache.ResultTime.TimeNotRequested,
+              FetchCache.SingleRequestResult.ValueFound
+            )
+          )
+        ),
+        List(Some(1), Some(2), Some(3))
+      )
+    )
+
+    // Par results exact
     assertEquals(
       resultsPar,
       DedupedRequest[Id, List[Option[Int]]](
@@ -76,7 +124,21 @@ class LazyRequestSpec extends CatsEffectSuite {
             (2, intFetch.wrappedId) -> Some(2),
             (3, intFetch.wrappedId) -> Some(3)
           ),
-          Set.empty
+          Set.empty,
+          Chain(
+            FetchCache.RequestLogEntry.SingleRequest(
+              intFetch.wrappedId,
+              5,
+              FetchCache.ResultTime.TimeNotRequested,
+              FetchCache.SingleRequestResult.ValueFound
+            ),
+            FetchCache.RequestLogEntry.BatchRequest(
+              intFetch.wrappedId,
+              Set(1, 2, 3),
+              Set.empty,
+              FetchCache.ResultTime.TimeNotRequested
+            )
+          )
         ),
         List(Some(1), Some(2), Some(3))
       )
@@ -94,7 +156,7 @@ class LazyRequestSpec extends CatsEffectSuite {
     }
 
     val fewInts     = intFetch.batchLazy(Set(1, 2, 3))
-    val two         = LazyRequest.liftF[Id, String]("Hello world!")("two")
+    val two         = LazyRequest.liftF[Id, String]("Hello world!", "two")
     val coupleBools = boolFetch.batchLazy(Set(true, false))
 
     val resultLinear = (fewInts, two, coupleBools).tupled.run
@@ -108,37 +170,69 @@ class LazyRequestSpec extends CatsEffectSuite {
       )
     )
 
+    // Par checks
     assertEquals(
-      resultPar.unsafeCache,
-      FetchCache(
-        Map(
-          (1, FetchId.StringId("intFetch"))      -> Some(1),
-          (2, FetchId.StringId("intFetch"))      -> Some(2),
-          (3, FetchId.StringId("intFetch"))      -> Some(3),
-          (true, FetchId.StringId("boolFetch"))  -> Some(true),
-          (false, FetchId.StringId("boolFetch")) -> Some(false),
-          ("two", FetchId.Lifted)                -> Some("Hello world!")
+      resultPar.unsafeCache.cacheMap,
+      Map(
+        (1, FetchId.StringId("intFetch"))      -> Some(1),
+        (2, FetchId.StringId("intFetch"))      -> Some(2),
+        (3, FetchId.StringId("intFetch"))      -> Some(3),
+        (true, FetchId.StringId("boolFetch"))  -> Some(true),
+        (false, FetchId.StringId("boolFetch")) -> Some(false),
+        ("two", FetchId.Lifted)                -> Some("Hello world!")
+      )
+    )
+    assertEquals(
+      resultPar.unsafeCache.fetchAllAcc,
+      Set.empty[FetchId.StringId]
+    )
+    assertEquals(
+      resultPar.unsafeCache.requestLog.toList.toSet,
+      Set(
+        FetchCache.RequestLogEntry.BatchRequest(
+          intFetch.wrappedId,
+          Set(1, 2, 3),
+          Set.empty,
+          FetchCache.ResultTime.TimeNotRequested
         ),
-        Set.empty
+        FetchCache.RequestLogEntry
+          .LiftedRequest("Hello world!", FetchCache.ResultTime.TimeNotRequested),
+        FetchCache.RequestLogEntry.BatchRequest(
+          boolFetch.wrappedId,
+          Set(true, false),
+          Set.empty,
+          FetchCache.ResultTime.TimeNotRequested
+        )
       )
     )
 
+    // In cases where batches are from different sources, they should be always equal
     assertEquals(resultLinear, resultPar)
   }
 
   test("Dedupes lifted requests (linear)") {
     var counter = 0
 
-    val fetchOne = LazyRequest.liftF(IO {
-      counter = counter + 1
-      1
-    })("fetchOne")
+    val fetchOne = LazyRequest.liftF(
+      IO {
+        counter = counter + 1
+        1
+      },
+      "fetchOne"
+    )
 
     val results = List(fetchOne, fetchOne, fetchOne).sequence.run
 
     val checkResult = results.assertEquals(
       DedupedRequest[IO, List[Int]](
-        FetchCache(Map(("fetchOne", FetchId.Lifted) -> Some(1)), Set.empty),
+        FetchCache(
+          Map(("fetchOne", FetchId.Lifted) -> Some(1)),
+          Set.empty,
+          Chain.one(
+            FetchCache.RequestLogEntry
+              .LiftedRequest("fetchOne", FetchCache.ResultTime.TimeNotRequested)
+          )
+        ),
         List(1, 1, 1)
       )
     )
@@ -151,16 +245,26 @@ class LazyRequestSpec extends CatsEffectSuite {
   test("Dedupes lifted requests (parallel)") {
     var counter = 0
 
-    val fetchOne = LazyRequest.liftF(IO {
-      counter = counter + 1
-      1
-    })("fetchOne")
+    val fetchOne = LazyRequest.liftF(
+      IO {
+        counter = counter + 1
+        1
+      },
+      "fetchOne"
+    )
 
     val results = List(fetchOne, fetchOne, fetchOne).parSequence.run
 
     val checkResult = results.assertEquals(
       DedupedRequest[IO, List[Int]](
-        FetchCache(Map(("fetchOne", FetchId.Lifted) -> Some(1)), Set.empty),
+        FetchCache(
+          Map(("fetchOne", FetchId.Lifted) -> Some(1)),
+          Set.empty,
+          Chain.one(
+            FetchCache.RequestLogEntry
+              .LiftedRequest("fetchOne", FetchCache.ResultTime.TimeNotRequested)
+          )
+        ),
         List(1, 1, 1)
       )
     )
@@ -190,7 +294,14 @@ class LazyRequestSpec extends CatsEffectSuite {
             (true, FetchId.StringId("boolFetch")) -> Some(true),
             (false                                -> FetchId.StringId("boolFetch")) -> Some(false)
           ),
-          Set(boolFetch.wrappedId)
+          Set(boolFetch.wrappedId),
+          Chain.one(
+            FetchCache.RequestLogEntry.AllRequest(
+              boolFetch.wrappedId,
+              Set(true, false),
+              FetchCache.ResultTime.TimeNotRequested
+            )
+          )
         ),
         List(expectedMap, expectedMap, expectedMap)
       )
@@ -221,7 +332,14 @@ class LazyRequestSpec extends CatsEffectSuite {
             (true, FetchId.StringId("boolFetch")) -> Some(true),
             (false                                -> FetchId.StringId("boolFetch")) -> Some(false)
           ),
-          Set(boolFetch.wrappedId)
+          Set(boolFetch.wrappedId),
+          Chain.one(
+            FetchCache.RequestLogEntry.AllRequest(
+              boolFetch.wrappedId,
+              Set(true, false),
+              FetchCache.ResultTime.TimeNotRequested
+            )
+          )
         ),
         List(expectedMap, expectedMap, expectedMap)
       )

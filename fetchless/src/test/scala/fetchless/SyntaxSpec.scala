@@ -5,6 +5,7 @@ import syntax._
 import cats.syntax.all._
 import cats._
 import munit.FunSuite
+import cats.data.Chain
 
 class SyntaxSpec extends FunSuite {
 
@@ -60,10 +61,24 @@ class SyntaxSpec extends FunSuite {
       val cache =
         FetchCache(
           is.toList.map(i => ((i -> dummyFetch.wrappedId) -> Some(i))).toMap,
-          Set.empty
+          Set.empty,
+          Chain.empty
         )
       val results = toResults(is)
       DedupedRequest[Id, Map[Int, Int]](cache, results)
+    }
+
+    def compareDF[A](a: DedupedRequest[Id, A], b: DedupedRequest[Id, A]) = {
+      assertEquals(
+        a.unsafeCache.cacheMap,
+        b.unsafeCache.cacheMap
+      )
+      assertEquals(
+        a.unsafeCache.fetchAllAcc,
+        b.unsafeCache.fetchAllAcc
+      )
+      // TODO: compare logs?
+      // TODO: elsewhere, test timing works for everything
     }
 
     // fetchAllMap
@@ -138,158 +153,158 @@ class SyntaxSpec extends FunSuite {
     )
 
     // fetchAllDedupeMap
-    assertEquals(two.fetchAllDedupeMap(dummyFetch), toDF(two.productIterator.toSet))
-    assertEquals(three.fetchAllDedupeMap(dummyFetch), toDF(three.productIterator.toSet))
-    assertEquals(four.fetchAllDedupeMap(dummyFetch), toDF(four.productIterator.toSet))
-    assertEquals(five.fetchAllDedupeMap(dummyFetch), toDF(five.productIterator.toSet))
-    assertEquals(six.fetchAllDedupeMap(dummyFetch), toDF(six.productIterator.toSet))
-    assertEquals(
+    compareDF(two.fetchAllDedupeMap(dummyFetch), toDF(two.productIterator.toSet))
+    compareDF(three.fetchAllDedupeMap(dummyFetch), toDF(three.productIterator.toSet))
+    compareDF(four.fetchAllDedupeMap(dummyFetch), toDF(four.productIterator.toSet))
+    compareDF(five.fetchAllDedupeMap(dummyFetch), toDF(five.productIterator.toSet))
+    compareDF(six.fetchAllDedupeMap(dummyFetch), toDF(six.productIterator.toSet))
+    compareDF(
       seven.fetchAllDedupeMap(dummyFetch),
       toDF(seven.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       eight.fetchAllDedupeMap(dummyFetch),
       toDF(eight.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       nine.fetchAllDedupeMap(dummyFetch),
       toDF(nine.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       ten.fetchAllDedupeMap(dummyFetch),
       toDF(ten.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       eleven.fetchAllDedupeMap(dummyFetch),
       toDF(eleven.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       twelve.fetchAllDedupeMap(dummyFetch),
       toDF(twelve.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       thirteen.fetchAllDedupeMap(dummyFetch),
       toDF(thirteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       fourteen.fetchAllDedupeMap(dummyFetch),
       toDF(fourteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       fifteen.fetchAllDedupeMap(dummyFetch),
       toDF(fifteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       sixteen.fetchAllDedupeMap(dummyFetch),
       toDF(sixteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       seventeen.fetchAllDedupeMap(dummyFetch),
       toDF(seventeen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       eighteen.fetchAllDedupeMap(dummyFetch),
       toDF(eighteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       nineteen.fetchAllDedupeMap(dummyFetch),
       toDF(nineteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       twenty.fetchAllDedupeMap(dummyFetch),
       toDF(twenty.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       twentyOne.fetchAllDedupeMap(dummyFetch),
       toDF(twentyOne.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       twentyTwo.fetchAllDedupeMap(dummyFetch),
       toDF(twentyTwo.productIterator.toSet)
     )
 
     // fetchAllLazyMap
-    assertEquals(
+    compareDF(
       two.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(two.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       three.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(three.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       four.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(four.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       five.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(five.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       six.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(six.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       seven.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(seven.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       eight.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(eight.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       nine.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(nine.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       ten.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(ten.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       eleven.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(eleven.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       twelve.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(twelve.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       thirteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(thirteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       fourteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(fourteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       fifteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(fifteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       sixteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(sixteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       seventeen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(seventeen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       eighteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(eighteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       nineteen.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(nineteen.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       twenty.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(twenty.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       twentyOne.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(twentyOne.productIterator.toSet)
     )
-    assertEquals(
+    compareDF(
       twentyTwo.fetchAllLazyMap(Applicative[Id], dummyFetch).run,
       toDF(twentyTwo.productIterator.toSet)
     )
@@ -564,52 +579,52 @@ class SyntaxSpec extends FunSuite {
     )
 
     // fetchTupledDedupe
-    assertEquals(
+    compareDF(
       two.fetchTupledDedupe(dummyFetch),
       toDF(two.productIterator.toSet).as((1.some, 2.some))
     )
-    assertEquals(
+    compareDF(
       three.fetchTupledDedupe(dummyFetch),
       toDF(three.productIterator.toSet).as((1.some, 2.some, 3.some))
     )
-    assertEquals(
+    compareDF(
       four.fetchTupledDedupe(dummyFetch),
       toDF(four.productIterator.toSet).as((1.some, 2.some, 3.some, 4.some))
     )
-    assertEquals(
+    compareDF(
       five.fetchTupledDedupe(dummyFetch),
       toDF(five.productIterator.toSet).as((1.some, 2.some, 3.some, 4.some, 5.some))
     )
-    assertEquals(
+    compareDF(
       six.fetchTupledDedupe(dummyFetch),
       toDF(six.productIterator.toSet).as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some))
     )
-    assertEquals(
+    compareDF(
       seven.fetchTupledDedupe(dummyFetch),
       toDF(seven.productIterator.toSet).as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some))
     )
-    assertEquals(
+    compareDF(
       eight.fetchTupledDedupe(dummyFetch),
       toDF(eight.productIterator.toSet)
         .as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some, 8.some))
     )
-    assertEquals(
+    compareDF(
       nine.fetchTupledDedupe(dummyFetch),
       toDF(nine.productIterator.toSet)
         .as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some, 8.some, 9.some))
     )
-    assertEquals(
+    compareDF(
       ten.fetchTupledDedupe(dummyFetch),
       toDF(ten.productIterator.toSet)
         .as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some, 8.some, 9.some, 10.some))
     )
-    assertEquals(
+    compareDF(
       eleven.fetchTupledDedupe(dummyFetch),
       toDF(eleven.productIterator.toSet).as(
         (1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some, 8.some, 9.some, 10.some, 11.some)
       )
     )
-    assertEquals(
+    compareDF(
       twelve.fetchTupledDedupe(dummyFetch),
       toDF(twelve.productIterator.toSet).as(
         (
@@ -628,7 +643,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       thirteen.fetchTupledDedupe(dummyFetch),
       toDF(thirteen.productIterator.toSet).as(
         (
@@ -648,7 +663,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       fourteen.fetchTupledDedupe(dummyFetch),
       toDF(fourteen.productIterator.toSet).as(
         (
@@ -669,7 +684,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       fifteen.fetchTupledDedupe(dummyFetch),
       toDF(fifteen.productIterator.toSet).as(
         (
@@ -691,7 +706,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       sixteen.fetchTupledDedupe(dummyFetch),
       toDF(sixteen.productIterator.toSet).as(
         (
@@ -714,7 +729,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       seventeen.fetchTupledDedupe(dummyFetch),
       toDF(seventeen.productIterator.toSet).as(
         (
@@ -738,7 +753,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       eighteen.fetchTupledDedupe(dummyFetch),
       toDF(eighteen.productIterator.toSet).as(
         (
@@ -763,7 +778,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       nineteen.fetchTupledDedupe(dummyFetch),
       toDF(nineteen.productIterator.toSet).as(
         (
@@ -789,7 +804,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       twenty.fetchTupledDedupe(dummyFetch),
       toDF(twenty.productIterator.toSet).as(
         (
@@ -816,7 +831,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       twentyOne.fetchTupledDedupe(dummyFetch),
       toDF(twentyOne.productIterator.toSet).as(
         (
@@ -844,7 +859,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       twentyTwo.fetchTupledDedupe(dummyFetch),
       toDF(twentyTwo.productIterator.toSet).as(
         (
@@ -875,52 +890,52 @@ class SyntaxSpec extends FunSuite {
     )
 
     // fetchTupledLazy
-    assertEquals(
+    compareDF(
       two.fetchTupledLazy(dummyFetch).run,
       toDF(two.productIterator.toSet).as((1.some, 2.some))
     )
-    assertEquals(
+    compareDF(
       three.fetchTupledLazy(dummyFetch).run,
       toDF(three.productIterator.toSet).as((1.some, 2.some, 3.some))
     )
-    assertEquals(
+    compareDF(
       four.fetchTupledLazy(dummyFetch).run,
       toDF(four.productIterator.toSet).as((1.some, 2.some, 3.some, 4.some))
     )
-    assertEquals(
+    compareDF(
       five.fetchTupledLazy(dummyFetch).run,
       toDF(five.productIterator.toSet).as((1.some, 2.some, 3.some, 4.some, 5.some))
     )
-    assertEquals(
+    compareDF(
       six.fetchTupledLazy(dummyFetch).run,
       toDF(six.productIterator.toSet).as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some))
     )
-    assertEquals(
+    compareDF(
       seven.fetchTupledLazy(dummyFetch).run,
       toDF(seven.productIterator.toSet).as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some))
     )
-    assertEquals(
+    compareDF(
       eight.fetchTupledLazy(dummyFetch).run,
       toDF(eight.productIterator.toSet)
         .as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some, 8.some))
     )
-    assertEquals(
+    compareDF(
       nine.fetchTupledLazy(dummyFetch).run,
       toDF(nine.productIterator.toSet)
         .as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some, 8.some, 9.some))
     )
-    assertEquals(
+    compareDF(
       ten.fetchTupledLazy(dummyFetch).run,
       toDF(ten.productIterator.toSet)
         .as((1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some, 8.some, 9.some, 10.some))
     )
-    assertEquals(
+    compareDF(
       eleven.fetchTupledLazy(dummyFetch).run,
       toDF(eleven.productIterator.toSet).as(
         (1.some, 2.some, 3.some, 4.some, 5.some, 6.some, 7.some, 8.some, 9.some, 10.some, 11.some)
       )
     )
-    assertEquals(
+    compareDF(
       twelve.fetchTupledLazy(dummyFetch).run,
       toDF(twelve.productIterator.toSet).as(
         (
@@ -939,7 +954,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       thirteen.fetchTupledLazy(dummyFetch).run,
       toDF(thirteen.productIterator.toSet).as(
         (
@@ -959,7 +974,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       fourteen.fetchTupledLazy(dummyFetch).run,
       toDF(fourteen.productIterator.toSet).as(
         (
@@ -980,7 +995,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       fifteen.fetchTupledLazy(dummyFetch).run,
       toDF(fifteen.productIterator.toSet).as(
         (
@@ -1002,7 +1017,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       sixteen.fetchTupledLazy(dummyFetch).run,
       toDF(sixteen.productIterator.toSet).as(
         (
@@ -1025,7 +1040,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       seventeen.fetchTupledLazy(dummyFetch).run,
       toDF(seventeen.productIterator.toSet).as(
         (
@@ -1049,7 +1064,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       eighteen.fetchTupledLazy(dummyFetch).run,
       toDF(eighteen.productIterator.toSet).as(
         (
@@ -1074,7 +1089,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       nineteen.fetchTupledLazy(dummyFetch).run,
       toDF(nineteen.productIterator.toSet).as(
         (
@@ -1100,7 +1115,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       twenty.fetchTupledLazy(dummyFetch).run,
       toDF(twenty.productIterator.toSet).as(
         (
@@ -1127,7 +1142,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       twentyOne.fetchTupledLazy(dummyFetch).run,
       toDF(twentyOne.productIterator.toSet).as(
         (
@@ -1155,7 +1170,7 @@ class SyntaxSpec extends FunSuite {
         )
       )
     )
-    assertEquals(
+    compareDF(
       twentyTwo.fetchTupledLazy(dummyFetch).run,
       toDF(twentyTwo.productIterator.toSet).as(
         (

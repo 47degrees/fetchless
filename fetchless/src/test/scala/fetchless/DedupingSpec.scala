@@ -5,27 +5,86 @@ import syntax._
 import cats.syntax.all._
 import cats._
 import munit.FunSuite
+import cats.data.Chain
 
 class DedupingSpec extends FunSuite {
 
   val exampleKey = ("1" -> FetchId.StringId("str"))
 
+  val firstLog = FetchCache.RequestLogEntry.SingleRequest(
+    exampleKey._2,
+    1,
+    FetchCache.ResultTime.Instantaneous,
+    FetchCache.SingleRequestResult.ValueFound
+  )
+
+  val secondLog = FetchCache.RequestLogEntry.SingleRequest(
+    exampleKey._2,
+    2,
+    FetchCache.ResultTime.Instantaneous,
+    FetchCache.SingleRequestResult.ValueNotFound
+  )
+
   test("DedupedRequest absorb") {
-    val dedupeA = DedupedRequest(FetchCache(Map(exampleKey -> 1.some), Set.empty), none[Int])
-    val dedupeB = DedupedRequest(FetchCache(Map(exampleKey -> none[Int]), Set.empty), none[Int])
+    val dedupeA = DedupedRequest(
+      FetchCache(
+        Map(exampleKey -> 1.some),
+        Set(FetchId.StringId("example1")),
+        Chain.one(
+          firstLog
+        )
+      ),
+      none[Int]
+    )
+    val dedupeB = DedupedRequest(
+      FetchCache(
+        Map(exampleKey -> none[Int]),
+        Set(FetchId.StringId("example2")),
+        Chain.one(
+          secondLog
+        )
+      ),
+      none[Int]
+    )
+
+    val absorbed = dedupeA.absorb(dedupeB)
 
     assertEquals(
-      dedupeA.absorb(dedupeB).unsafeCache.cacheMap,
+      absorbed.unsafeCache.cacheMap,
       Map(exampleKey -> none[Int]).asInstanceOf[FetchCache.CacheMap]
+    )
+
+    assertEquals(
+      absorbed.unsafeCache.fetchAllAcc,
+      Set(FetchId.StringId("example1"), FetchId.StringId("example2"))
+    )
+
+    assertEquals(
+      absorbed.unsafeCache.requestLog,
+      Chain(firstLog, secondLog)
     )
   }
 
   test("DedupedRequest flatMap") {
     val key2 = ("2" -> FetchId.StringId("str"))
     val dedupeA =
-      DedupedRequest[Id, Option[Int]](FetchCache(Map(exampleKey -> 1.some), Set.empty), 4.some)
+      DedupedRequest[Id, Option[Int]](
+        FetchCache(
+          Map(exampleKey -> 1.some),
+          Set(FetchId.StringId("example1")),
+          Chain.one(firstLog)
+        ),
+        4.some
+      )
     val dedupeB =
-      DedupedRequest[Id, Option[Int]](FetchCache(Map(key2 -> 2.some), Set.empty), 5.some)
+      DedupedRequest[Id, Option[Int]](
+        FetchCache(
+          Map(key2 -> 2.some),
+          Set(FetchId.StringId("example2")),
+          Chain.one(secondLog)
+        ),
+        5.some
+      )
 
     val result = dedupeA.flatMap {
       case None    => dedupeB
@@ -38,7 +97,8 @@ class DedupingSpec extends FunSuite {
           exampleKey -> 1.some,
           key2       -> 2.some
         ),
-        Set.empty
+        Set(FetchId.StringId("example1"), FetchId.StringId("example2")),
+        Chain(firstLog, secondLog)
       ),
       4.some
     )
