@@ -56,7 +56,7 @@ object AllFetch {
     new AllFetch[F, I, A] {
       val id: String = fetch.id
 
-      val timer = FetchTimer.noop[F] // TODO: wire this in
+      val timer = fetch.timer
 
       def single(i: I): F[Option[A]] = fetch.single(i)
 
@@ -95,13 +95,19 @@ object AllFetch {
               )
             )
           DedupedRequest(fetchCache, m)
-        } // TODO: double check to see if cached logic in base fetch respects BatchAll calls
+        }
 
       def batchAllDedupeCache(
           cache: FetchCache
       ): F[DedupedRequest[F, Map[I, A]]] =
         if (cache.fetchAllAcc.contains(fetch.wrappedId)) {
-          DedupedRequest[F, Map[I, A]](cache, cache.getMap(fetch)).pure[F]
+          val results = cache.getMap(fetch)
+          val newLog = FetchCache.RequestLogEntry.AllRequest(
+            fetch.wrappedId,
+            results.keySet.asInstanceOf[Set[Any]],
+            FetchCache.ResultTime.Instantaneous
+          )
+          DedupedRequest[F, Map[I, A]](cache.addLog(newLog), cache.getMap(fetch)).pure[F]
         } else {
           batchAllDedupe.map { df =>
             df.copy(unsafeCache = cache ++ df.unsafeCache)

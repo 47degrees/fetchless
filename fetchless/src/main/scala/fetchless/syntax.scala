@@ -5,6 +5,7 @@ import cats.syntax.all._
 import cats.Monad
 import cats.data.Kleisli
 import cats.Applicative
+import cats.effect.Clock
 
 object syntax {
 
@@ -17,14 +18,18 @@ object syntax {
       fdf.flatMap { df =>
         df.alsoFetch(fetch)(i)
       }
-    def alsoFetchAll[I, B](
+    def alsoBatch[I, B](
         is: Set[I]
     )(implicit fetch: Fetch[F, I, B]): F[DedupedRequest[F, Map[I, B]]] = fdf.flatMap { df =>
-      df.alsoFetchAll(is)
+      df.alsoBatch(is)
     }
-    def alsoFetchAll[I, B](fetch: Fetch[F, I, B])(is: Set[I]): F[DedupedRequest[F, Map[I, B]]] =
+    def alsoBatch[I, B](fetch: Fetch[F, I, B])(is: Set[I]): F[DedupedRequest[F, Map[I, B]]] =
       fdf.flatMap { df =>
-        df.alsoFetchAll(fetch)(is)
+        df.alsoBatch(fetch)(is)
+      }
+    def alsoBatchAll[I, B](implicit fetch: AllFetch[F, I, B]): F[DedupedRequest[F, Map[I, B]]] =
+      fdf.flatMap { df =>
+        df.alsoBatchAll
       }
   }
 
@@ -52,7 +57,16 @@ object syntax {
 
   implicit class EffectfulSyntaxMonad[F[_]: Monad, I](fi: F[I]) {
     def fetchLazy[A](id: Any)(implicit fetch: Fetch[F, I, A]): LazyRequest[F, Option[A]] =
-      LazyRequest.liftF(fi)(id).flatMap(i => fetch.singleLazy(i))
+      LazyRequest.liftF(fi, id).flatMap(i => fetch.singleLazy(i))
+    def fetchLazyTimed[A](id: Any, timer: FetchTimer[F])(implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[F, Option[A]] =
+      LazyRequest.liftTimedF(fi, id, timer).flatMap(i => fetch.singleLazy(i))
+    def fetchLazyTimed[A](id: Any)(implicit
+        fetch: Fetch[F, I, A],
+        clock: Clock[F]
+    ): LazyRequest[F, Option[A]] =
+      LazyRequest.liftTimedF(fi, id, FetchTimer.clock[F]).flatMap(i => fetch.singleLazy(i))
   }
 
   implicit class TraverseBatchSyntax[G[_]: Traverse, I](is: G[I]) {

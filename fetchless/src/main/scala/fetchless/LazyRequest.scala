@@ -10,6 +10,7 @@ import fetchless.LazyRequest.LiftedReqInfo
 import cats.data.Chain
 import fs2.Chunk
 import fetchless.LazyRequest.AllReqInfo
+import cats.effect.Clock
 
 final case class LazyRequest[F[_], A](
     k: Kleisli[F, FetchCache, LazyRequest.ReqInfo[F, A]]
@@ -35,7 +36,23 @@ final case class LazyRequest[F[_], A](
 
   /** Chains this request into another effect, preserving the chain of deduplication. */
   def flatMapF[B](f: A => F[B])(id: Any)(implicit F: Monad[F]) = flatMap(
-    f.andThen(LazyRequest.liftF(_)(id))
+    f.andThen(LazyRequest.liftF(_, id))
+  )
+
+  /**
+   * Chains this request into another effect, preserving the chain of deduplication. Uses the
+   * default `Clock`-based timer.
+   */
+  def flatMapTimedF[B](f: A => F[B])(id: Any)(implicit F: Monad[F], C: Clock[F]) = flatMap(
+    f.andThen(LazyRequest.liftTimedF(_, id, FetchTimer.clock[F]))
+  )
+
+  /**
+   * Chains this request into another effect, preserving the chain of deduplication. Allows
+   * specifying a timer manually.
+   */
+  def flatMapTimedF[B](f: A => F[B])(id: Any, timer: FetchTimer[F])(implicit F: Monad[F]) = flatMap(
+    f.andThen(LazyRequest.liftTimedF(_, id, timer))
   )
 
   /** Runs this `LazyRequest`, returning the deduplicated results. */
@@ -85,24 +102,13 @@ final case class LazyRequest[F[_], A](
                 getResultK
               )
             }
-          case LiftedReqInfo(prevCache, id, getResultK) =>
+          case LiftedReqInfo(prevCache, id, timer, getResultK) =>
             LazyBatchRequest.BReqInfo(
               prevCache,
               Map.empty,
               Map.empty,
               Map(
-                id -> getResultK.map(c =>
-                  c.unsafeCache ++ FetchCache(
-                    Map((id, FetchId.Lifted) -> Some(c.last)),
-                    Set.empty,
-                    Chain.one(
-                      FetchCache.RequestLogEntry.LiftedRequest(
-                        id,
-                        FetchCache.ResultTime.TimeNotRequested
-                      ) // TODO: wire in timer for this
-                    )
-                  )
-                )
+                id -> getResultK.map(_.unsafeCache)
               ),
               Kleisli { fetchCache =>
                 DedupedRequest[F, A](
@@ -198,23 +204,25 @@ object LazyRequest {
     def lift[F[_]: Applicative, A](
         inCache: FetchCache,
         reqId: Any,
-        fa: F[A]
+        fa: F[A],
+        timer: FetchTimer[F]
     ): ReqInfo[F, A] =
       LiftedReqInfo(
         inCache,
         reqId,
+        timer,
         Kleisli[F, FetchCache, DedupedRequest[F, A]] { c =>
           c.cacheMap.get(reqId -> FetchId.Lifted) match {
             case None =>
-              fa.map { a =>
+              timer.time(fa).map { case (t, a) =>
                 val newCache = c ++ FetchCache(
                   Map((reqId -> FetchId.Lifted) -> Some(a)),
                   Set.empty,
                   Chain.one(
                     FetchCache.RequestLogEntry.LiftedRequest(
                       reqId,
-                      FetchCache.ResultTime.TimeNotRequested
-                    ) // TODO: wire in timer for this
+                      t
+                    )
                   )
                 )
                 DedupedRequest(newCache, a)
@@ -286,26 +294,13 @@ object LazyRequest {
   final case class LiftedReqInfo[F[_], A](
       prevCache: FetchCache,
       reqId: Any, // Used in the event of needing to combine requests into a batch
+      timer: FetchTimer[F],
       getResultK: Kleisli[F, FetchCache, DedupedRequest[F, A]]
   ) extends ReqInfo[F, A] {
     val fetchId                                       = FetchId.Lifted
     def updateCache(extra: FetchCache): ReqInfo[F, A] = copy(prevCache = prevCache ++ extra)
-    def runCached(c: FetchCache)(implicit F: Functor[F]): F[DedupedRequest[F, A]] = {
-      getResultK(c).map(df =>
-        df.copy(unsafeCache =
-          df.unsafeCache ++ FetchCache(
-            Map((reqId, FetchId.Lifted) -> Some(df.last)),
-            Set.empty,
-            Chain.one(
-              FetchCache.RequestLogEntry.LiftedRequest(
-                reqId,
-                FetchCache.ResultTime.TimeNotRequested
-              ) // TODO: wire in timer for this
-            )
-          )
-        )
-      )
-    }
+    def runCached(c: FetchCache)(implicit F: Functor[F]): F[DedupedRequest[F, A]] =
+      getResultK(c)
     def run(implicit F: Functor[F]): F[DedupedRequest[F, A]] =
       runCached(prevCache)
   }
@@ -335,9 +330,18 @@ object LazyRequest {
    * chains and for-comprehensions. Requires a unique ID value so that, if this is included in a
    * batch of requests, it can also be deduplicated and the value properly retrieved.
    */
-  def liftF[F[_]: Applicative, A](fa: F[A])(id: Any): LazyRequest[F, A] = LazyRequest(
-    Kleisli(c => ReqInfo.lift(c, id, fa).pure[F])
-  )
+  def liftF[F[_]: Applicative, A](fa: F[A], id: Any): LazyRequest[F, A] =
+    liftTimedF(fa, id, FetchTimer.noop[F])
+
+  /** Same as `liftF` but times a request using a `cats.effect.Clock`-based timer. */
+  def liftTimedF[F[_]: Applicative: Clock, A](fa: F[A], id: Any): LazyRequest[F, A] =
+    liftTimedF(fa, id, FetchTimer.clock[F])
+
+  /** Same as `liftF` but times a request using a timer you manually supply. */
+  def liftTimedF[F[_]: Applicative, A](fa: F[A], id: Any, timer: FetchTimer[F]): LazyRequest[F, A] =
+    LazyRequest(
+      Kleisli(c => ReqInfo.lift(c, id, fa, timer).pure[F])
+    )
 
   /**
    * Lifts any pure value into a `LazyRequest` context, so you can use it in `flatMap` chains and

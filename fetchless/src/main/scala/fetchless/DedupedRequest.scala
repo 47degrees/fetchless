@@ -31,14 +31,21 @@ final case class DedupedRequest[F[_], A](
     fetch.singleDedupeCache(i)(unsafeCache)
 
   /** Fetch a set of values using this cache as a base. */
-  def alsoFetchAll[I, B](is: Set[I])(implicit
+  def alsoBatch[I, B](is: Set[I])(implicit
       fetch: Fetch[F, I, B]
   ): F[DedupedRequest[F, Map[I, B]]] =
     fetch.batchDedupeCache(is)(unsafeCache)
 
   /** Fetch a set of values using this cache as a base. */
-  def alsoFetchAll[I, B](fetch: Fetch[F, I, B])(is: Set[I]): F[DedupedRequest[F, Map[I, B]]] =
+  def alsoBatch[I, B](fetch: Fetch[F, I, B])(is: Set[I]): F[DedupedRequest[F, Map[I, B]]] =
     fetch.batchDedupeCache(is)(unsafeCache)
+
+  /**
+   * Fetch all known values from a fetch instance. Must be an `AllFetch` so it knows how to retrieve
+   * all values.
+   */
+  def alsoBatchAll[I, B](implicit fetch: AllFetch[F, I, B]): F[DedupedRequest[F, Map[I, B]]] =
+    fetch.batchAllDedupeCache(unsafeCache)
 
   /**
    * Fold another deduped fetch request into this one, so that the cache will contain values from
