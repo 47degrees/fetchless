@@ -199,7 +199,7 @@ class LazyRequestSpec extends CatsEffectSuite {
     checkResult >> checkCounter
   }
 
-  test("Dedupes AllFetch requests (parallel)".only) {
+  test("Dedupes AllFetch requests (parallel)") {
     var counter = 0
 
     val boolFetch = AllFetch.fromExisting(Fetch.echo[IO, Boolean]("boolFetch"))(IO {
