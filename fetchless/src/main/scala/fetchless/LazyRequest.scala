@@ -323,7 +323,7 @@ object LazyRequest {
    * `cats.Monad` instance for `LazyRequest` so you can `flatMap` and lift `pure` values into a
    * `LazyRequest` context.
    */
-  implicit def lazyRequestM[F[_]: Monad] = new Monad[LazyRequest[F, *]] {
+  implicit def lazyRequestM[F[_]: Monad]: Monad[LazyRequest[F, *]] = new Monad[LazyRequest[F, *]] {
     def flatMap[A, B](fa: LazyRequest[F, A])(f: A => LazyRequest[F, B]): LazyRequest[F, B] =
       fa.flatMap(f)
     def tailRecM[A, B](a: A)(f: A => LazyRequest[F, Either[A, B]]): LazyRequest[F, B] =
@@ -339,49 +339,51 @@ object LazyRequest {
         }
       )
     def pure[A](x: A): LazyRequest[F, A] = LazyRequest(
-      Kleisli(c => ReqInfo.pure(c, x).pure[F])
+      Kleisli(c => Applicative[F].pure(ReqInfo.pure(c, x)))
     )
   }
 
   /** `cats.Functor` instance for `LazyRequest`, so you can `map` the output results. */
-  implicit def lazyRequestF[F[_]: Functor] = new Functor[LazyRequest[F, *]] {
-    def map[A, B](fa: LazyRequest[F, A])(f: A => B): LazyRequest[F, B] = LazyRequest(
-      fa.k.map { r =>
-        r match {
-          case a: FetchReqInfo[F, A] =>
-            a.copy(
-              getResultK = a.getResultK.map(_.map(f)),
-              mapTo = a.mapTo.map(_.map(f))
-            )
-          case b: LiftedReqInfo[F, A] =>
-            b.copy(getResultK = b.getResultK.map(_.map(f)))
-          case c: PureReqInfo[F, A] =>
-            c.copy(getResultK = c.getResultK.map(_.map(f)))
-          case d: AllReqInfo[F, A] =>
-            d.copy[F, B](getResultK = d.getResultK.map(_.map(f)))
+  implicit def lazyRequestF[F[_]: Functor]: Functor[LazyRequest[F, *]] =
+    new Functor[LazyRequest[F, *]] {
+      def map[A, B](fa: LazyRequest[F, A])(f: A => B): LazyRequest[F, B] = LazyRequest(
+        fa.k.map { r =>
+          r match {
+            case a: FetchReqInfo[F, A] =>
+              a.copy(
+                getResultK = a.getResultK.map(_.map(f)),
+                mapTo = a.mapTo.map(_.map(f))
+              )
+            case b: LiftedReqInfo[F, A] =>
+              b.copy(getResultK = b.getResultK.map(_.map(f)))
+            case c: PureReqInfo[F, A] =>
+              c.copy(getResultK = c.getResultK.map(_.map(f)))
+            case d: AllReqInfo[F, A] =>
+              d.copy[F, B](getResultK = d.getResultK.map(_.map(f)))
+          }
         }
-      }
-    )
-  }
+      )
+    }
 
   /**
    * `cats.Parallel` instance for `LazyRequest`. Enables automatic batching and parallelism with
    * parallel syntax such as `parTupled`, `parTraverse`, `parSequence` syntax.
    */
-  implicit def lazyRequestP[M[_]: Monad: Parallel] = new Parallel[LazyRequest[M, *]] {
-    type F[x] = LazyBatchRequest[M, x]
-    def sequential: LazyBatchRequest[M, *] ~> LazyRequest[M, *] =
-      new FunctionK[LazyBatchRequest[M, *], LazyRequest[M, *]] {
-        def apply[A](l: LazyBatchRequest[M, A]): LazyRequest[M, A] = l.unbatch
-      }
-    def parallel: LazyRequest[M, *] ~> LazyBatchRequest[M, *] =
-      new FunctionK[LazyRequest[M, *], LazyBatchRequest[M, *]] {
-        def apply[A](l: LazyRequest[M, A]): LazyBatchRequest[M, A] =
-          l.toBatch
-      }
-    def applicative: Applicative[LazyBatchRequest[M, *]] = LazyBatchRequest.lazyBatchRequestA[M]
-    def monad: Monad[LazyRequest[M, *]]                  = lazyRequestM[M]
-  }
+  implicit def lazyRequestP[M[_]: Monad: Parallel]: Parallel[LazyRequest[M, *]] =
+    new Parallel[LazyRequest[M, *]] {
+      type F[x] = LazyBatchRequest[M, x]
+      def sequential: LazyBatchRequest[M, *] ~> LazyRequest[M, *] =
+        new FunctionK[LazyBatchRequest[M, *], LazyRequest[M, *]] {
+          def apply[A](l: LazyBatchRequest[M, A]): LazyRequest[M, A] = l.unbatch
+        }
+      def parallel: LazyRequest[M, *] ~> LazyBatchRequest[M, *] =
+        new FunctionK[LazyRequest[M, *], LazyBatchRequest[M, *]] {
+          def apply[A](l: LazyRequest[M, A]): LazyBatchRequest[M, A] =
+            l.toBatch
+        }
+      def applicative: Applicative[LazyBatchRequest[M, *]] = LazyBatchRequest.lazyBatchRequestA[M]
+      def monad: Monad[LazyRequest[M, *]]                  = lazyRequestM[M]
+    }
 }
 
 /**
@@ -400,7 +402,7 @@ final case class LazyBatchRequest[F[_], A](
       fb: LazyBatchRequest[F, B]
   )(implicit F: Apply[F]): LazyBatchRequest[F, (A, B)] = {
     LazyBatchRequest(
-      k.map { aInfo => bInfo: LazyBatchRequest.BReqInfo[F, B] =>
+      k.map { aInfo => (bInfo: LazyBatchRequest.BReqInfo[F, B]) =>
         LazyBatchRequest.BReqInfo.combine(aInfo, bInfo)
       }.ap(fb.k)
     )
@@ -411,7 +413,7 @@ final case class LazyBatchRequest[F[_], A](
    * `Parallel` instance, and is not needed to call manually.
    */
   def unbatch(implicit F: Monad[F], P: Parallel[F]): LazyRequest[F, A] = LazyRequest(
-    k.flatMapF { info: LazyBatchRequest.BReqInfo[F, A] =>
+    k.flatMapF { (info: LazyBatchRequest.BReqInfo[F, A]) =>
       info.run.map { df =>
         LazyRequest.ReqInfo.pure[F, A](df.unsafeCache, df.last)
       }

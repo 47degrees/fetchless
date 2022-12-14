@@ -1,12 +1,18 @@
 package fetchless
 
 import cats.{FlatMap, Functor, Traverse}
-import cats.syntax.all._
+import cats.syntax.flatMap._
+import cats.syntax.functor._
 import cats.Monad
-import cats.data.Kleisli
 import cats.Applicative
 
 object syntax {
+
+  implicit def dfFunctor[F[_]: Functor]: Functor[DedupedRequest[F, *]] =
+    DedupedRequest.dedupedRequestF[F]
+
+  implicit def lrFunctor[F[_]: Functor]: Functor[LazyRequest[F, *]] =
+    LazyRequest.lazyRequestF[F]
 
   implicit class FDedupedRequestSyntax[F[_]: FlatMap, A](fdf: F[DedupedRequest[F, A]]) {
     def alsoFetch[I, B](i: I)(implicit fetch: Fetch[F, I, B]): F[DedupedRequest[F, Option[B]]] =
