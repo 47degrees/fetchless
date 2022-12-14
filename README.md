@@ -32,7 +32,7 @@ As listed above in the "key differences" section, a tagless approach has numerou
 The two biggest advantages are speed and API flexibility.
 
 ### Speed
-While not properly benchmarked extensively yet (I wrote this up very quickly and will expand on this later), I've ran some local benchmarks that confirm my initial suspicions about the speed of Fetch vs Fetchless.
+While not properly benchmarked extensively yet (I wrote this up very quickly and will expand on this later), I've ran some local benchmarks that confirm my initial suspicions about the speed of Fetch vs fetchless.
 On a fundamental level, it should make sense that a "Free"-style DSL is slower to at least some degree than a "tagless final"-style one.
 This is because of how they are encoded, since the tagless version is much more direct and has less overhead by definition.
 
@@ -66,8 +66,8 @@ Fetch traverse result
 In each case, the benchmark involves traversing over a list of 50,000 integers and performing a fetch, except for `LazyBatchRequest set` which is an explicit batch and not a traversal.
 For the `immediate` case up top, that is for a direct fetch with no deduping or auto-batching support.
 `LazyRequest` supports deduping and sequencing, but not auto-batching, and `LazyBatchRequest` is an applicative type that supports batches only.
-So in the absolute worst case for Fetchless, it appears that starting with `LazyRequest` and using `parTraverse` to re-encode as a single `LazyBatchRequest` takes well over an order of magnitude less time to perform.
-It's still possible that future changes will bridge this gap slowly, as more features and functionality are added or possible bugs are fixed, but this is a very promising start and shows that even if you choose the slowest possible fetch option in Fetchless, it is still faster than Fetch.
+So in the absolute worst case for fetchless, it appears that starting with `LazyRequest` and using `parTraverse` to re-encode as a single `LazyBatchRequest` takes well over an order of magnitude less time to perform.
+It's still possible that future changes will bridge this gap slowly, as more features and functionality are added or possible bugs are fixed, but this is a very promising start and shows that even if you choose the slowest possible fetch option in fetchless, it is still faster than Fetch.
 
 ### Flexibility
 There are a couple details in Fetch that make it not very flexible in the API department:
@@ -77,7 +77,7 @@ There are a couple details in Fetch that make it not very flexible in the API de
 * `Fetch.run` and similar require the `Concurrent` type class among others, which means that if you are several layers deep into your program you have to depend on this rather heavy type class for your effect type rather than something more simple like `Monad`.
 * Because a `Fetch` is its own effect, implementing features that happen between sequenced fetches requires implementing the functionality inside the library, rather than providing some kind of way for users to hook in and interleve effects.
 
-Fetchless solves this by making the following decisions:
+fetchless solves this by making the following decisions:
 
 * A `Fetch` instance (similar to `DataSource`) has only two main methods: `single` and `batch`, and no dependency on any specific type class.
 * The `Fetch` instance itself should decide if parallelism or maximum-batch-sizes should be considered in cases of fetching multiple IDs in a batch.
@@ -112,7 +112,7 @@ val testDataSource = new DataSource[IO, Int, Int] {
 val testProgram: IO[List[Int]] = OGFetch.run(List(1, 2, 3).map(i => Fetch(i, testDataSource)).sequence)
 ```
 
-For Fetchless, the equivalent code would look like this:
+For fetchless, the equivalent code would look like this:
 
 ```scala
 import cats.effect.IO
@@ -180,3 +180,9 @@ However, you cannot chain them together, so you need to convert back and forth b
 This is done with the `Parallel` instance for `LazyRequest` so you can call `.parTupled`/`.parTraverse` and so on on your independent fetches, and get automatic deduplication and batching just like you did in the original Fetch library, only now you must explicitly opt-in to auto-batching.
 
 For more details, please see the included tests.
+
+# Copyright
+
+fetchless is designed and developed by 47 Degrees Open Source
+
+Copyright (C)  2022 47 Degrees Open Source <https://www.47deg.com>
