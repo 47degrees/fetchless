@@ -25,14 +25,14 @@ final case class FetchCache(cacheMap: CacheMap, fetchAllAcc: Set[FetchId.StringI
     cacheMap.get(i -> fetch.wrappedId).flatten.asInstanceOf[Option[A]]
 
   /** Accesses every value for a given fetch in this cache */
-  def getMap[F[_], I, A](fetch: Fetch[F, I, A]): Map[I, A] = cacheMap.collect[I, A] {
+  def getMap[F[_], I, A](fetch: Fetch[F, I, A]): Map[I, A] = cacheMap.collect {
     case ((i, fid), Some(b)) if (fid == fetch.wrappedId) =>
       i.asInstanceOf[I] -> b.asInstanceOf[A]
   }
 
   /** Like `getMap` but exclusively collects the IDs specified. */
   def getMapForSet[F[_], I, A](fetch: Fetch[F, I, A])(iSet: Set[I]): Map[I, A] =
-    cacheMap.collect[I, A] {
+    cacheMap.collect {
       case ((i, fid), Some(b))
           if (fid == fetch.wrappedId && iSet.asInstanceOf[Set[Any]].contains(i)) =>
         i.asInstanceOf[I] -> b.asInstanceOf[A]

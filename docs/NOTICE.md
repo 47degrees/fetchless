@@ -2,8 +2,8 @@
 [comment]: <> (It is automatically updated after every release of https://github.com/47degrees/.github)
 [comment]: <> (If you want to suggest a change, please open a PR or issue in that repository)
 
-fetchless
+@NAME@
 
-Copyright (c) 2022 47 Degrees Open Source. All rights reserved.
+Copyright (c) @YEAR_RANGE@ @ORG_NAME@. All rights reserved.
 
-Licensed under Apache-2.0. See [LICENSE](LICENSE.md) for terms.
+Licensed under @LICENSE@. See [LICENSE](LICENSE.md) for terms.

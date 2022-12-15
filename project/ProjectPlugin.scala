@@ -1,9 +1,10 @@
-import microsites.MicrositesPlugin.autoImport._
 import com.typesafe.sbt.site.SitePlugin.autoImport._
+import mdoc.MdocPlugin.autoImport._
+import microsites.{CdnDirectives, ConfigYml}
+import microsites.MicrositesPlugin.autoImport._
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
-import microsites._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 object ProjectPlugin extends AutoPlugin {
 
@@ -107,33 +108,33 @@ object ProjectPlugin extends AutoPlugin {
     Seq(
       scalacOptions := {
         val withStripedLinter = scalacOptions.value filterNot Set("-Xlint", "-Xfuture").contains
-        (CrossVersion.partialVersion(scalaBinaryVersion.value) match {
-          case Some((2, 13)) => withStripedLinter :+ "-Ymacro-annotations"
-          case _             => withStripedLinter
+        (scalaBinaryVersion.value match {
+          case "2.13" => withStripedLinter :+ "-Ymacro-annotations"
+          case _      => withStripedLinter
         }) :+ "-language:higherKinds"
       },
-      libraryDependencies ++= {
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((3, 0)) => Seq()
-          case _ =>
-            Seq(
-              compilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
-              compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
-            )
-        }
-      },
+      libraryDependencies ++= (scalaBinaryVersion.value match {
+        case "3" =>
+          Seq.empty
+        case _ =>
+          Seq(
+            compilerPlugin(
+              "org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full
+            ),
+            compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
+          )
+      }),
       scalacOptions := Seq(
         "-unchecked",
         "-deprecation",
         "-feature",
-        "-Ywarn-dead-code",
         "-language:higherKinds",
         "-language:existentials",
         "-language:postfixOps"
-      ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((3, 0))  => Seq("-source:3.0-migration", "-Ykind-projector")
-        case Some((2, 13)) => Seq("-Ywarn-dead-code")
-        case _             => Seq("-Ywarn-dead-code", "-Ypartial-unification")
+      ) ++ (scalaBinaryVersion.value match {
+        case "3"    => Seq("-source:3.0-migration", "-Ykind-projector")
+        case "2.13" => Seq("-Ywarn-dead-code")
+        case "2.12" => Seq("-Ywarn-dead-code", "-Ypartial-unification")
       })
     )
 

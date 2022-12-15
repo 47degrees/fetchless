@@ -2,26 +2,22 @@ package fetchless
 
 import syntax._
 
-import cats.syntax.all._
 import cats._
-import cats.effect.IO
-
-import cats.effect.unsafe.implicits.global
-import cats.effect.kernel.Ref
+import cats.syntax.all._
+import cats.effect.{IO, Ref}
 import munit.CatsEffectSuite
-import cats.effect.Clock
 
 class LazyRequestSpec extends CatsEffectSuite {
 
   test("LazyRequest allows for non-linear deduping") {
-    def intFetch(countRef: Ref[IO, Int], logRef: Ref[IO, List[Int]]) =
+    def intFetch(countRef: Ref[IO, Int], logRef: Ref[IO, List[Int]]): Fetch[IO, Int, Int] =
       Fetch.singleSequenced[IO, Int, Int]("intFetch")(i =>
         countRef.update(_ + 1) >> logRef.update(_ :+ i) >> IO(i.some)
       )
 
     val firstProgram = (IO.ref(0), IO.ref(List.empty[Int])).tupled.flatMap {
       case (countRef, logRef) =>
-        implicit val fetch = intFetch(countRef, logRef)
+        implicit val fetch: Fetch[IO, Int, Int] = intFetch(countRef, logRef)
 
         val fetchProgram = fetch.singleLazy(1) >> fetch.singleLazy(2) >> fetch.singleLazy(2)
         val testProgram  = fetchProgram.run >> (countRef.get, logRef.get).tupled
@@ -31,7 +27,7 @@ class LazyRequestSpec extends CatsEffectSuite {
 
     val secondProgram = (IO.ref(0), IO.ref(List.empty[Int])).tupled.flatMap {
       case (countRef, logRef) =>
-        implicit val fetch = intFetch(countRef, logRef)
+        implicit val fetch: Fetch[IO, Int, Int] = intFetch(countRef, logRef)
 
         val fetchProgram = (fetch.singleLazy(2) >> fetch
           .singleLazy(1)) >> (fetch.singleLazy(1) >> fetch.singleLazy(2) >> fetch
@@ -47,7 +43,7 @@ class LazyRequestSpec extends CatsEffectSuite {
   test("Has a parallel instance with LazyBatchRequest") {
     var timesBatchCalled = 0
 
-    implicit val intFetch = Fetch.batchable[Id, Int, Int]("intFetch") { i =>
+    implicit val intFetch: Fetch[Id, Int, Int] = Fetch.batchable[Id, Int, Int]("intFetch") { i =>
       Some(i)
     } { is =>
       timesBatchCalled += 1
@@ -85,13 +81,15 @@ class LazyRequestSpec extends CatsEffectSuite {
   }
 
   test("Runs requests across multiple sources") {
-    implicit val intFetch = Fetch.singleSequenced[Id, Int, Int]("intFetch") { i =>
-      Some(i)
+    implicit val intFetch: Fetch[Id, Int, Int] = Fetch.singleSequenced[Id, Int, Int]("intFetch") {
+      i =>
+        Some(i)
     }
 
-    implicit val boolFetch = Fetch.singleSequenced[Id, Boolean, Boolean]("boolFetch") { i =>
-      Some(i)
-    }
+    implicit val boolFetch: Fetch[Id, Boolean, Boolean] =
+      Fetch.singleSequenced[Id, Boolean, Boolean]("boolFetch") { i =>
+        Some(i)
+      }
 
     val fewInts     = intFetch.batchLazy(Set(1, 2, 3))
     val two         = LazyRequest.liftF[Id, String]("Hello world!")("two")
@@ -201,7 +199,7 @@ class LazyRequestSpec extends CatsEffectSuite {
     checkResult >> checkCounter
   }
 
-  test("Dedupes AllFetch requests (parallel)".only) {
+  test("Dedupes AllFetch requests (parallel)") {
     var counter = 0
 
     val boolFetch = AllFetch.fromExisting(Fetch.echo[IO, Boolean]("boolFetch"))(IO {

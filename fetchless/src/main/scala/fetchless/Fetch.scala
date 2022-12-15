@@ -161,9 +161,9 @@ object Fetch {
         batch(iSet).map { resultMap =>
           val missing = iSet.diff(resultMap.keySet)
           val initialCache: FetchCache = FetchCache(
-            resultMap.view
-              .map[(I, FetchId), Option[A]] { case (i, a) => (i -> wrappedId) -> a.some }
-              .toMap,
+            Cols.map(resultMap) { case (i, a) =>
+              (i -> wrappedId) -> a.some
+            },
             Set.empty
           )
           val missingCache: FetchCache =
@@ -288,7 +288,7 @@ object Fetch {
           { is =>
             val setMap = is.toList.map(c => f(c) -> c).toMap
             val inSet  = setMap.keySet
-            fab.batch(inSet).map(m => m.map[C, D] { case (a, b) => setMap.apply(a) -> g(b) })
+            fab.batch(inSet).map(Cols.map(_) { case (a, b) => setMap.apply(a) -> g(b) })
           }
         )
 
@@ -297,7 +297,7 @@ object Fetch {
       override def rmap[A, B, C](fab: Fetch[F, A, B])(f: B => C): Fetch[F, A, C] =
         default[F, A, C](fab.id)(
           i => fab.single(i).map(_.map(f)),
-          is => fab.batch(is).map(_.view.mapValues(f).toMap)
+          is => fab.batch(is).map(Cols.mapValues(_)(f))
         )
     }
 }

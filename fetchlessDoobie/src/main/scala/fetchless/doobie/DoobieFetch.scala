@@ -68,7 +68,7 @@ object DoobieFetch {
       xa: Transactor[F]
   )(single: Query[I, A])(batch: Set[I] => Query0[(I, A)]): Fetch[F, I, A] = {
     val baseFetch = Fetch.batchable[F, I, A](fetchId)(i => single.option(i).transact(xa))(s =>
-      batch(s).toMap.transact(xa)
+      batch(s).toMap[I, A].transact(xa)
     )
     StreamingFetch.wrapExistingGuaranteed(baseFetch)(iSet => batch(iSet).stream.transact(xa))
   }
@@ -104,11 +104,11 @@ object DoobieFetch {
       single: Query[I, A]
   )(batch: Set[I] => Query0[(I, A)])(batchAll: Query0[(I, A)]): Fetch[F, I, A] = {
     val baseFetch = Fetch.batchable[F, I, A](fetchId)(i => single.option(i).transact(xa))(s =>
-      batch(s).toMap.transact(xa)
+      batch(s).toMap[I, A].transact(xa)
     )
     val streamingFetch =
       StreamingFetch.wrapExistingGuaranteed(baseFetch)(iSet => batch(iSet).stream.transact(xa))
-    StreamingAllFetch.fromExistingStreamingFetch(streamingFetch)(batchAll.toMap.transact(xa))(
+    StreamingAllFetch.fromExistingStreamingFetch(streamingFetch)(batchAll.toMap[I, A].transact(xa))(
       batchAll.stream.transact(xa)
     )
   }

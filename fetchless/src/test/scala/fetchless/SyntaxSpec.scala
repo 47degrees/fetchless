@@ -8,7 +8,7 @@ import munit.FunSuite
 
 class SyntaxSpec extends FunSuite {
 
-  implicit val dummyFetch =
+  implicit val dummyFetch: Fetch[Id, Int, Int] =
     Fetch.echo[Id, Int]("intFetch")
 
   test("List batching") {

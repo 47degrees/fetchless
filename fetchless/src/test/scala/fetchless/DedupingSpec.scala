@@ -49,12 +49,13 @@ class DedupingSpec extends FunSuite {
   test("Dedupe across multiple fetches") {
     var timesIntsFetched = 0
 
-    implicit val intFetch = Fetch.singleSequenced[Id, Int, Int]("intFetch") { i =>
-      timesIntsFetched += 1
-      Some(i)
+    implicit val intFetch: Fetch[Id, Int, Int] = Fetch.singleSequenced[Id, Int, Int]("intFetch") {
+      i =>
+        timesIntsFetched += 1
+        Some(i)
     }
 
-    implicit val boolFetch = Fetch.batchable[Id, Boolean, Boolean](
+    implicit val boolFetch: Fetch[Id, Boolean, Boolean] = Fetch.batchable[Id, Boolean, Boolean](
       "boolFetch"
     )(i => Some(i))(iSet => iSet.toList.map(i => (i, i)).toMap)
 
