@@ -40,7 +40,7 @@ object ProjectPlugin extends AutoPlugin {
       Seq(
         libraryDependencies ++=
           Seq(
-            "org.http4s" %%% "http4s-client" % "1.0.0-M32"
+            "org.http4s" %%% "http4s-client" % "1.0.0-M37"
           )
       )
 
