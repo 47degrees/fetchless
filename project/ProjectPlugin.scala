@@ -17,7 +17,7 @@ object ProjectPlugin extends AutoPlugin {
         libraryDependencies ++=
           Seq(
             "org.typelevel" %%% "cats-effect"       % "3.5.4",
-            "co.fs2"         %% "fs2-core"          % "3.10.2",
+            "co.fs2"         %% "fs2-core"          % "3.11.0",
             "org.typelevel" %%% "munit-cats-effect" % "2.0.0" % "test"
           )
       )
@@ -26,7 +26,7 @@ object ProjectPlugin extends AutoPlugin {
       Seq(
         libraryDependencies ++=
           Seq(
-            "co.fs2" %% "fs2-core" % "3.10.2"
+            "co.fs2" %% "fs2-core" % "3.11.0"
           )
       )
 
