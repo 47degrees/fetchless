@@ -476,7 +476,9 @@ object syntax {
           m.get(is._7)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
@@ -604,7 +606,9 @@ object syntax {
           m.get(is._8)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
@@ -644,7 +648,9 @@ object syntax {
           )
         }
       }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A], Option[A])
     ] =
@@ -701,7 +707,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -754,7 +762,9 @@ object syntax {
           m.get(is._9)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -818,7 +828,9 @@ object syntax {
             )
           }
       }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -897,7 +909,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -956,7 +970,9 @@ object syntax {
             m.get(is._10)
           )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -1026,7 +1042,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -1119,7 +1137,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -1182,7 +1202,9 @@ object syntax {
           m.get(is._11)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -1260,7 +1282,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -1361,7 +1385,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -1432,7 +1458,9 @@ object syntax {
           m.get(is._12)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -1514,7 +1542,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -1661,7 +1691,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -1764,7 +1796,9 @@ object syntax {
           m.get(is._13)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -1878,7 +1912,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -2060,7 +2096,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -2169,7 +2207,9 @@ object syntax {
           m.get(is._14)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -2289,7 +2329,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -2480,7 +2522,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -2595,7 +2639,9 @@ object syntax {
           m.get(is._15)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -2721,7 +2767,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -2921,7 +2969,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -3042,7 +3092,9 @@ object syntax {
           m.get(is._16)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -3174,7 +3226,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -3383,7 +3437,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -3510,7 +3566,9 @@ object syntax {
           m.get(is._17)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -3648,7 +3706,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -3866,7 +3926,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -3999,7 +4061,9 @@ object syntax {
           m.get(is._18)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -4143,7 +4207,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -4372,7 +4438,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -4511,7 +4579,9 @@ object syntax {
           m.get(is._19)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -4661,7 +4731,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -4899,7 +4971,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -5044,7 +5118,9 @@ object syntax {
           m.get(is._20)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -5200,7 +5276,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -5447,7 +5525,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -5598,7 +5678,9 @@ object syntax {
           m.get(is._21)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -5760,7 +5842,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
@@ -6016,7 +6100,9 @@ object syntax {
      * Fetches all results in the current tuple, retaining the tuple structure. Will try to batch
      * requests if your `Fetch` instance supports it.
      */
-    def fetchTupled[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupled[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       (
           Option[A],
           Option[A],
@@ -6173,7 +6259,9 @@ object syntax {
           m.get(is._22)
         )
       }
-    def fetchTupledDedupe[F[_]: Functor, A](implicit fetch: Fetch[F, I, A]): F[
+    def fetchTupledDedupe[F[_]: Functor, A](implicit
+        fetch: Fetch[F, I, A]
+    ): F[
       DedupedRequest[
         F,
         (
@@ -6341,7 +6429,9 @@ object syntax {
             )
           }
         }
-    def fetchTupledLazy[F[_]: Monad, A](implicit fetch: Fetch[F, I, A]): LazyRequest[
+    def fetchTupledLazy[F[_]: Monad, A](implicit
+        fetch: Fetch[F, I, A]
+    ): LazyRequest[
       F,
       (
           Option[A],
